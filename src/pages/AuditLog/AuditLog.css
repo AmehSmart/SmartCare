@@ -1,0 +1,560 @@
+/* AuditLog.css */
+
+/* ============================================================
+   Page shell
+   ============================================================ */
+
+.al-page {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  background: var(--color-canvas);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+}
+
+.al-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ============================================================
+   Accent top strip
+   ============================================================ */
+
+.al-topstrip {
+  height: 4px;
+  background: var(--color-action);
+}
+
+/* ============================================================
+   Chain-break banner (above title bar)
+   ============================================================ */
+
+.al-page-banner {
+  padding: 12px var(--sp-8) 0;
+}
+
+.al-chain-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-danger-light);
+  border: 1px solid rgba(179, 38, 30, 0.25);
+  color: var(--color-danger);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.al-chain-banner svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.al-chain-banner__link {
+  border: none;
+  background: none;
+  color: var(--color-danger);
+  text-decoration: underline;
+  font-weight: 700;
+  font-size: var(--text-caption);
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
+/* ============================================================
+   Page title bar
+   ============================================================ */
+
+.al-page-title {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 28px var(--sp-8);
+}
+
+.al-page-title h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+}
+
+/* ============================================================
+   Main content area
+   ============================================================ */
+
+.al-content {
+  padding: var(--sp-6) var(--sp-8);
+}
+
+/* ============================================================
+   Card — wraps table + optional detail panel
+   ============================================================ */
+
+.al-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  /* overflow: hidden removed — let content breathe; panel scrolls independently */
+}
+
+.al-card__main {
+  flex: 1;
+  padding: var(--sp-5) var(--sp-6);
+  min-width: 0;
+}
+
+.al-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.al-card__header h2 {
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+
+.al-card__header p {
+  font-size: 12.5px;
+  color: var(--color-text-3);
+  margin: 0;
+}
+
+/* ============================================================
+   Download button
+   ============================================================ */
+
+.al-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+
+.al-download-btn svg { width: 14px; height: 14px; }
+.al-download-btn:hover { background: var(--color-canvas); }
+
+/* ============================================================
+   Filter chips
+   ============================================================ */
+
+.al-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: 18px;
+}
+
+.al-filters__label {
+  font-size: 12.5px;
+  color: var(--color-text-3);
+  font-weight: 600;
+  margin-right: var(--sp-1);
+}
+
+.al-filter-chip {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.al-filter-chip:hover { background: var(--color-canvas); }
+
+.al-filter-chip--active {
+  background: var(--color-action);
+  border-color: var(--color-action);
+  color: #fff;
+}
+
+/* ============================================================
+   Table
+   ============================================================ */
+
+.al-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  -webkit-overflow-scrolling: touch;
+}
+
+.al-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-caption);
+  /* Prevent table from collapsing below a readable minimum */
+  min-width: 560px;
+}
+
+.al-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-3);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-gray-50);
+  white-space: nowrap;
+}
+
+.al-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-gray-100);
+  vertical-align: top;
+}
+
+.al-table tbody tr { cursor: pointer; }
+.al-table tbody tr:hover { background: var(--color-canvas); }
+.al-table tbody tr:last-child td { border-bottom: none; }
+
+.al-row--flagged  { background: var(--color-warning-light); }
+.al-row--flagged:hover { background: #fef0d4; }
+.al-row--selected { background: var(--color-action-light) !important; }
+
+.al-table__time { color: var(--color-text-2); white-space: nowrap; }
+.al-table__target { color: var(--color-action); font-weight: 600; }
+.al-table__dash { color: var(--color-gray-300); }
+.al-table__role {
+  color: var(--color-text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.al-activity-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.al-activity-cell__actor { font-weight: 600; color: var(--color-text); }
+.al-activity-cell__field { color: var(--color-text-2); font-size: 12.5px; }
+
+.al-activity-cell__note {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--color-warning);
+}
+
+/* Chain-integrity indicator dot */
+.al-chain-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.al-chain-dot--broken { background: var(--color-danger); }
+
+/* ============================================================
+   Pagination
+   ============================================================ */
+
+.al-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--sp-4);
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.al-pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.al-pagination__btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-2);
+  font-family: var(--font-sans);
+  transition: background var(--transition);
+}
+
+.al-pagination__btn:hover { background: var(--color-canvas); }
+.al-pagination__btn svg { width: 14px; height: 14px; }
+.al-pagination__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.al-pagination__page {
+  font-size: 12.5px;
+  color: var(--color-text-2);
+  padding: 0 var(--sp-2);
+}
+
+.al-pagination__total {
+  font-size: 12.5px;
+  color: var(--color-text-3);
+}
+
+/* ============================================================
+   Event detail panel (side panel)
+   ============================================================ */
+
+.al-card--split .al-card__main {
+  border-right: 1px solid var(--color-border);
+}
+
+.al-detail {
+  width: 300px;
+  flex-shrink: 0;
+  padding: var(--sp-5) var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+.al-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.al-detail__header h3 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.al-detail__close {
+  border: none;
+  background: none;
+  color: var(--color-text-3);
+  cursor: pointer;
+  padding: var(--sp-1);
+  border-radius: var(--radius-sm);
+  display: flex;
+  transition: color var(--transition);
+}
+
+.al-detail__close:hover { color: var(--color-text); }
+.al-detail__close svg { width: 16px; height: 16px; }
+
+.al-detail__who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.al-detail__who > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.al-detail__who strong {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.al-detail__who small {
+  font-size: 11.5px;
+  color: var(--color-text-3);
+}
+
+.al-detail__section h4 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-3);
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.al-detail__list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.al-detail__list div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  gap: var(--sp-2);
+}
+
+.al-detail__list dt { color: var(--color-text-3); flex-shrink: 0; }
+.al-detail__list dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+}
+
+.al-detail__hash { margin-bottom: 10px; }
+
+.al-detail__hash-label {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-3);
+  margin-bottom: 3px;
+}
+
+.al-detail__hash code {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-2);
+  background: var(--color-canvas);
+  border-radius: var(--radius-sm);
+  padding: 6px var(--sp-2);
+  word-break: break-all;
+}
+
+.al-detail__nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: 14px;
+}
+
+.al-detail__nav button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  border: none;
+  background: none;
+  color: var(--color-action);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
+.al-detail__nav button svg { width: 13px; height: 13px; }
+
+.al-detail__nav button:disabled {
+  color: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   Responsive — Tablet (sidebar collapses at 768px)
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .al-page {
+    grid-template-columns: 1fr;
+  }
+
+  .al-page-banner {
+    padding: 12px var(--sp-5) 0;
+  }
+
+  .al-page-title {
+    padding: var(--sp-5);
+  }
+
+  .al-content {
+    padding: var(--sp-5);
+  }
+
+  /* Stack detail panel below table */
+  .al-card--split {
+    flex-direction: column;
+  }
+
+  .al-card--split .al-card__main {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .al-detail {
+    width: auto;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* ============================================================
+   Responsive — Small phone
+   ============================================================ */
+
+@media (max-width: 600px) {
+  .al-page-title h1 {
+    font-size: 22px;
+  }
+
+  .al-content {
+    padding: var(--sp-4);
+  }
+
+  .al-card__main {
+    padding: var(--sp-4);
+  }
+
+  .al-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .al-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ============================================================
+   Responsive — Very small phone
+   ============================================================ */
+
+@media (max-width: 480px) {
+  .al-filters {
+    gap: 6px;
+  }
+
+  .al-filter-chip {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .al-detail {
+    padding: var(--sp-4);
+  }
+}

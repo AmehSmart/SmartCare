@@ -1,0 +1,86 @@
+/* Button.css */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4);
+  height: 44px;
+  min-width: 44px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-small);
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition), box-shadow var(--transition), transform var(--transition);
+  position: relative;
+}
+.btn:active { transform: scale(0.98); }
+.btn svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+/* --- Primary --- */
+.btn--primary {
+  background: var(--color-action);
+  color: #fff;
+}
+.btn--primary:hover { background: var(--color-action-hover); }
+
+/* --- Secondary --- */
+.btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+.btn--secondary:hover { background: var(--color-gray-50); }
+
+/* --- Danger --- */
+.btn--danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+.btn--danger:hover { background: var(--color-danger-hover); }
+
+/* --- Break-Glass Emergency --- */
+.btn--breakglass {
+  background: var(--color-glass);
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+.btn--breakglass:hover { background: var(--color-glass-hover); box-shadow: 0 0 0 3px rgba(138,31,122,0.25); }
+
+/* --- Ghost --- */
+.btn--ghost {
+  background: transparent;
+  color: var(--color-action);
+  border: 1px solid transparent;
+}
+.btn--ghost:hover { background: var(--color-action-light); }
+
+/* --- Sizes --- */
+.btn--sm {
+  height: 36px;
+  padding: 0 var(--sp-3);
+  font-size: var(--text-caption);
+}
+.btn--lg {
+  height: 52px;
+  padding: 0 var(--sp-6);
+  font-size: var(--text-body);
+}
+.btn--full { width: 100%; }
+
+/* --- Disabled --- */
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}

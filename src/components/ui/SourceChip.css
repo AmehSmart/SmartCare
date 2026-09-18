@@ -1,0 +1,48 @@
+/* SourceChip.css — PRD metadata provenance badges */
+
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  line-height: var(--lh-caption);
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.source-chip svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* Hospital-verified: green + shield */
+.source-chip--hospital {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  border-color: rgba(30,122,77,0.2);
+}
+
+/* Document-backed: neutral */
+.source-chip--document {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  border-color: var(--color-border);
+}
+
+/* Patient-entered: secondary blue */
+.source-chip--patient {
+  background: var(--color-action-light);
+  color: var(--color-action);
+  border-color: rgba(11,110,153,0.2);
+}
+
+/* Recently-updated: amber */
+.source-chip--recent {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+  border-color: rgba(178,106,0,0.2);
+}

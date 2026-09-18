@@ -1,0 +1,534 @@
+/* Dashboard.css
+   Layout-specific styles only.
+   Topbar, Sidebar, Avatar, and Pill styles live in their own component CSS files.
+*/
+
+/* ============================================================
+   App shell grid
+   ============================================================ */
+
+.dash {
+  display: grid;
+  grid-template-columns: 240px 1fr 340px;
+  min-height: 100vh;
+  background: var(--color-canvas);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+}
+
+/* ============================================================
+   Main column
+   ============================================================ */
+
+.dash-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ============================================================
+   Content area
+   ============================================================ */
+
+.dash-content {
+  padding: var(--sp-8);
+  flex: 1;
+}
+
+.dash-content__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--sp-6);
+  gap: var(--sp-4);
+}
+
+.dash-content__header h1 {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.dash-content__header p {
+  color: var(--color-text-2);
+  margin: 0;
+  font-size: var(--text-small);
+}
+
+.date-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.date-pill svg {
+  width: 15px;
+  height: 15px;
+  color: var(--color-text-3);
+}
+
+/* ============================================================
+   Stats row
+   ============================================================ */
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+.stat-card:hover { border-color: var(--color-action); box-shadow: var(--shadow-sm); }
+.stat-card:active { transform: translateY(1px); }
+.stat-card:focus-visible { outline: 3px solid rgba(27,143,224,.28); outline-offset: 2px; }
+
+.stat-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.stat-card__label {
+  font-size: var(--text-caption);
+  color: var(--color-text-2);
+  font-weight: 600;
+}
+
+.stat-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-card__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.stat-card__icon--blue  { background: var(--color-action-light); color: var(--color-action); }
+.stat-card__icon--green { background: var(--color-success-light); color: var(--color-success); }
+.stat-card__icon--gray  { background: var(--color-gray-100);     color: var(--color-gray-500); }
+
+.stat-card__value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.stat-card__note {
+  font-size: var(--text-caption);
+  color: var(--color-text-3);
+  margin-top: var(--sp-1);
+}
+
+/* ============================================================
+   Profile card
+   ============================================================ */
+
+.profile-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  margin-bottom: var(--sp-5);
+}
+
+.profile-card h2 {
+  font-size: 17px;
+  margin: 0 0 var(--sp-5);
+}
+
+.profile-card__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.profile-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.profile-card__info strong {
+  font-size: 17px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-card__info small {
+  color: var(--color-text-3);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.profile-card__divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--sp-5) 0;
+}
+
+.profile-card__meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+}
+
+.meta-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-3);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.meta-value--green { color: var(--color-success); }
+
+/* ============================================================
+   Content row (quick actions + active patients)
+   ============================================================ */
+
+.content-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-5);
+}
+
+/* ============================================================
+   Shared panel
+   ============================================================ */
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+}
+
+.panel h2 {
+  font-size: 16.5px;
+  margin: 0 0 var(--sp-4);
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-1);
+}
+
+.panel__header--icon {
+  gap: var(--sp-3);
+}
+
+.panel__header--icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-3);
+}
+
+.panel__header h2 { margin: 0; }
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-action);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  text-decoration: none;
+}
+.panel__header-action { border: 0; background: transparent; cursor: pointer; font-family: inherit; padding: 4px; }
+.panel__header-action:focus-visible,
+.action-list__item:focus-visible,
+.patient-list__item:focus-visible { outline: 3px solid rgba(27,143,224,.28); outline-offset: 2px; }
+
+.link svg { width: 14px; height: 14px; }
+
+/* ============================================================
+   Action list & patient list
+   ============================================================ */
+
+.action-list,
+.patient-list,
+.activity-list,
+.permission-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.action-list__item,
+.patient-list__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px var(--sp-1);
+  border-bottom: 1px solid var(--color-gray-100);
+  cursor: pointer;
+  transition: background var(--transition);
+  border-radius: var(--radius-sm);
+}
+
+.action-list__item:last-child,
+.patient-list__item:last-child { border-bottom: none; }
+
+.action-list__item:hover,
+.patient-list__item:hover { background: var(--color-gray-50); }
+.action-list__item:active,
+.patient-list__item:active { background: var(--color-action-light); }
+
+.action-list__item div,
+.patient-list__item div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.action-list__item strong,
+.patient-list__item strong {
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-list__item small,
+.patient-list__item small {
+  color: var(--color-text-3);
+  font-size: 12.5px;
+}
+
+.action-list__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
+  color: var(--color-text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.action-list__icon svg { width: 17px; height: 17px; }
+
+.action-list__item > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-gray-300);
+  flex-shrink: 0;
+}
+
+.patient-list__item > svg { width: 16px; height: 16px; color: var(--color-gray-300); flex-shrink: 0; }
+.dashboard-patient-state { padding: 18px var(--sp-1); color: var(--color-text-2); font-size: var(--text-small); }
+.dashboard-patient-state--error { color: var(--color-danger); }
+.dashboard-patient-modal-list { display: flex; flex-direction: column; gap: 10px; }
+.dashboard-patient-modal-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.dashboard-patient-modal-item__identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.dashboard-patient-modal-item__identity > div { min-width: 0; }
+.dashboard-patient-modal-item__identity strong { display: block; font-size: 13.5px; overflow-wrap: anywhere; }
+.dashboard-patient-modal-item__identity small { display: block; color: var(--color-text-2); font-size: 12px; margin-top: 3px; }
+.dashboard-patient-modal-avatar { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 auto; border-radius: 50%; background: var(--color-action-light); color: var(--color-action); font-size: 12px; font-weight: 800; }
+.dashboard-patient-modal-item__action { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+.dashboard-patient-modal-state { padding: 28px 12px; margin: 0; text-align: center; color: var(--color-text-2); font-size: var(--text-small); }
+.dashboard-patient-modal-state--error { color: var(--color-danger); }
+
+/* ============================================================
+   Activity list
+   ============================================================ */
+
+.activity-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--sp-1);
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.activity-list__item:last-child { border-bottom: none; }
+
+.activity-list__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.activity-list__body strong {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-list__body small {
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+
+.activity-list__flag {
+  margin-left: auto;
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.activity-list__flag svg { width: 16px; height: 16px; }
+
+/* ============================================================
+   Permissions list
+   ============================================================ */
+
+.permission-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 2px;
+  font-size: var(--text-small);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.permission-list li:last-child { border-bottom: none; }
+
+.permission-check { color: var(--color-success); }
+.permission-check svg { width: 17px; height: 17px; }
+
+/* ============================================================
+   Right rail
+   ============================================================ */
+
+.dash-rail {
+  padding: var(--sp-8) var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+/* Tablet large — collapse right rail into main column grid */
+@media (max-width: 1200px) {
+  .dash {
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
+  }
+}
+
+/* Tablet — drop right rail to full-width row */
+@media (max-width: 960px) {
+  .dash {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .dash-rail {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-top: 0;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile — full width, sidebar goes to drawer */
+@media (max-width: 768px) {
+  .dash {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-content {
+    /* Leave room on the left for the hamburger menu trigger */
+    padding: var(--sp-6) var(--sp-5) var(--sp-7);
+  }
+
+  .dash-content__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .date-pill {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dash-rail {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+    padding: 0 var(--sp-5) var(--sp-6);
+  }
+
+  .stats-row,
+  .content-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .dash-content {
+    padding: var(--sp-5) var(--sp-4) var(--sp-6);
+  }
+
+  .dash-rail {
+    padding-left: var(--sp-4);
+    padding-right: var(--sp-4);
+  }
+
+  .profile-card__meta {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-card__value {
+    font-size: 26px;
+  }
+
+  .dashboard-patient-modal-item { align-items: flex-start; flex-direction: column; }
+  .dashboard-patient-modal-item__action { width: 100%; justify-content: space-between; }
+}

@@ -1,0 +1,537 @@
+/* PatientRecords.css */
+
+/* ============================================================
+   Page shell
+   ============================================================ */
+
+.pr-page {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  background: var(--color-canvas);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+}
+
+.pr-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ============================================================
+   Accent top strip
+   ============================================================ */
+
+.pr-topstrip {
+  height: 4px;
+  background: var(--color-action);
+}
+
+/* ============================================================
+   Page title bar
+   ============================================================ */
+
+.pr-page-title {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 28px var(--sp-8);
+}
+
+.pr-page-title__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.pr-page-title h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.pr-header-back,
+.pr-back-link,
+.pr-breadcrumb__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--color-action);
+  text-decoration: none;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pr-header-back:hover,
+.pr-back-link:hover,
+.pr-breadcrumb__link:hover { text-decoration: underline; }
+
+.pr-breadcrumb__link { color: var(--color-text-2); }
+
+.pr-loading {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-2);
+}
+
+/* ============================================================
+   Content area
+   ============================================================ */
+
+.pr-content {
+  padding: 28px var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  max-width: 940px;
+}
+
+/* ============================================================
+   Breadcrumb
+   ============================================================ */
+
+.pr-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 13.5px;
+  color: var(--color-text-2);
+  flex-wrap: wrap;
+}
+
+.pr-breadcrumb__back {
+  width: 14px;
+  height: 14px;
+  transform: rotate(180deg);
+  flex-shrink: 0;
+}
+
+.pr-breadcrumb__sep { color: var(--color-gray-300); }
+
+.pr-breadcrumb strong { color: var(--color-text); }
+
+/* ============================================================
+   Card
+   ============================================================ */
+
+.pr-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5) var(--sp-6);
+}
+
+/* ============================================================
+   Patient header (within card)
+   ============================================================ */
+
+.pr-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.pr-header__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pr-header__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pr-header__name-row strong { font-size: 17px; }
+
+.pr-header__info small {
+  color: var(--color-text-3);
+  font-size: var(--text-caption);
+}
+
+.pr-header__code {
+  font-size: 12px;
+  color: var(--color-text-3);
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+
+.pr-tabs {
+  display: flex;
+  gap: var(--sp-1);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--sp-5);
+  /* Allow horizontal scroll on small screens instead of overflowing */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.pr-tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+.pr-tabs__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-2);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  transition: color var(--transition);
+}
+
+.pr-tabs__item:hover { color: var(--color-text); }
+
+.pr-tabs__item--active {
+  color: var(--color-action);
+  border-bottom-color: var(--color-action);
+}
+
+.pr-tabs__lock { width: 13px; height: 13px; }
+
+/* ============================================================
+   Section blocks inside tabs
+   ============================================================ */
+
+.pr-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.pr-section h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 14.5px;
+  margin: 0 0 14px;
+  color: var(--color-text);
+}
+
+.pr-section h3 svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-2);
+}
+
+/* ============================================================
+   Field grid
+   ============================================================ */
+
+.pr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+}
+
+.pr-field-label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-3);
+  margin-bottom: var(--sp-1);
+  text-transform: uppercase;
+}
+
+.pr-field-value {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ============================================================
+   Vital chips
+   ============================================================ */
+
+.pr-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pr-chip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  min-width: 100px;
+}
+
+.pr-chip strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pr-chip strong small {
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 3px;
+}
+
+.pr-chip span {
+  font-size: 11.5px;
+  color: var(--color-text-2);
+}
+
+.pr-chip--blue   { background: var(--color-action-light); }
+.pr-chip--red    { background: var(--color-danger-light); }
+.pr-chip--amber  { background: var(--color-warning-light); }
+.pr-chip--teal   { background: #d7f7ee; }
+.pr-chip--purple { background: var(--color-glass-light); }
+
+/* ============================================================
+   Sensitive field reveal
+   ============================================================ */
+
+.pr-reveal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: var(--color-action);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
+.pr-reveal-link svg { width: 15px; height: 15px; }
+
+.pr-reveal-link em {
+  color: var(--color-text-3);
+  font-style: normal;
+  font-size: 12px;
+}
+
+.pr-revealed-text {
+  font-size: 13.5px;
+  color: var(--color-text);
+  background: var(--color-canvas);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.pr-sensitive-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   Restricted banner
+   ============================================================ */
+
+.pr-restricted-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-warning-light);
+  border: 1px solid rgba(178, 106, 0, 0.25);
+  color: var(--color-warning);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.pr-restricted-banner svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Appointment list
+   ============================================================ */
+
+.pr-appointment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pr-appointment-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.pr-appointment-list li:last-child { border-bottom: none; }
+
+.pr-appointment-list li strong {
+  display: block;
+  font-size: var(--text-small);
+}
+
+.pr-appointment-list li small {
+  color: var(--color-text-3);
+  font-size: 12.5px;
+}
+
+/* ============================================================
+   Access log
+   ============================================================ */
+
+.pr-access-log h3 {
+  font-size: 14.5px;
+  margin: 0 0 14px;
+}
+
+.pr-access-log ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pr-access-log li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-caption);
+  flex-wrap: wrap;
+}
+
+.pr-access-log li:last-child { border-bottom: none; }
+
+.pr-access-log__user {
+  color: var(--color-text);
+  font-weight: 600;
+  /* Was min-width: 150px — caused horizontal overflow on small screens */
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-access-log__action { color: var(--color-text-2); }
+
+.pr-access-log__action em {
+  font-style: normal;
+  color: var(--color-text-3);
+}
+
+.pr-access-log__flag {
+  margin-left: auto;
+  color: var(--color-warning);
+  flex-shrink: 0;
+}
+
+.pr-access-log__flag svg { width: 14px; height: 14px; }
+
+/* ============================================================
+   Responsive — Tablet (sidebar collapses)
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .pr-page {
+    grid-template-columns: 1fr;
+  }
+
+  .pr-page-title {
+    padding: var(--sp-5) var(--sp-5);
+  }
+
+  .pr-content {
+    padding: var(--sp-5);
+  }
+
+  .pr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================================
+   Responsive — Small phone
+   ============================================================ */
+
+@media (max-width: 600px) {
+  .pr-page-title {
+    padding: var(--sp-4);
+  }
+
+  .pr-page-title__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pr-content {
+    padding: var(--sp-4) var(--sp-4) var(--sp-6);
+  }
+
+  .pr-card {
+    padding: var(--sp-4);
+  }
+
+  .pr-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pr-chip {
+    min-width: calc(50% - 6px);
+  }
+
+  .pr-access-log__user {
+    white-space: normal;
+    flex: 0 0 100%;
+  }
+
+  .pr-access-log li {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+}
+
+/* ============================================================
+   Responsive — Very small phone (320–375px)
+   ============================================================ */
+
+@media (max-width: 390px) {
+  .pr-content {
+    padding: var(--sp-3);
+  }
+
+  .pr-card {
+    padding: var(--sp-3);
+  }
+
+  .pr-chip {
+    min-width: 100%;
+  }
+}

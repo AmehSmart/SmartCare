@@ -1,0 +1,82 @@
+/* BreakGlassBanner.css */
+
+.bg-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-glass);
+  color: #fff;
+  padding: var(--sp-3) var(--sp-6);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  font-size: var(--text-small);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(138,31,122,0.35);
+}
+
+.bg-banner__icon {
+  display: flex;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.18);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+}
+.bg-banner__icon svg { width: 18px; height: 18px; }
+
+.bg-banner__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bg-banner__title {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.bg-banner__detail { font-size: var(--text-small); }
+
+.bg-banner__timer {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  padding: var(--sp-2) var(--sp-3);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.bg-banner__timer svg { width: 15px; height: 15px; opacity: 0.8; }
+
+.bg-banner__end {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition);
+  font-family: var(--font-sans);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+.bg-banner__end:hover { background: rgba(255,255,255,0.28); }
+.bg-banner__end svg { width: 14px; height: 14px; }
+
+@media (max-width: 640px) {
+  .bg-banner {
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-4);
+  }
+  .bg-banner__end { display: none; }
+}

@@ -1,0 +1,119 @@
+/* Topbar.css */
+
+.dash-topbar {
+  height: 72px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-8);
+  gap: var(--sp-4);
+  flex-shrink: 0;
+}
+
+.dash-search {
+  flex: 1;
+  min-width: 0;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--color-text-3);
+}
+
+.dash-search svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.dash-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--text-small);
+  width: 100%;
+  color: var(--color-text);
+  min-width: 0;
+}
+
+.dash-search input::placeholder { color: var(--color-text-3); }
+
+.dash-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+/* Icon-only action button (bell, etc.) */
+.icon-btn {
+  position: relative;
+  border: none;
+  background: none;
+  color: var(--color-text-2);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), color var(--transition);
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.icon-btn:hover {
+  background: var(--color-canvas);
+  color: var(--color-text);
+}
+
+.icon-btn svg { width: 20px; height: 20px; }
+
+/* Notification dot */
+.icon-btn__dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-action);
+  border: 1.5px solid var(--color-surface);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .dash-topbar {
+    /* Make room on the left for the fixed sidebar hamburger trigger */
+    padding: 0 var(--sp-5) 0 68px;
+    height: 64px;
+    gap: var(--sp-3);
+  }
+
+  .dash-search {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-topbar {
+    padding: 0 var(--sp-4) 0 64px;
+  }
+
+  .dash-topbar__right {
+    gap: 10px;
+  }
+
+  .icon-btn {
+    padding: 4px;
+  }
+}

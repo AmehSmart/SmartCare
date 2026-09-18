@@ -1,0 +1,71 @@
+.emergency-page{min-height:100vh;background:#ececec;color:#17212b;font-family:var(--font-sans)}
+.emergency-topline{height:4px;background:var(--color-action)}
+.emergency-wrap{width:min(100%,620px);margin:0 auto;padding:36px 20px 64px}
+.emergency-back{display:inline-flex;align-items:center;gap:4px;color:#6c7882;font-size:12px;text-decoration:none;margin-bottom:14px}
+.emergency-back svg{width:14px;height:14px}
+.emergency-card{background:#fff;border:1px solid #e1e5e8;border-radius:8px;box-shadow:0 8px 24px rgba(23,33,43,.06);overflow:hidden}
+.emergency-card__header{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid #e7eaec}
+.emergency-card__icon{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#fff2d9;color:#df7900;flex:0 0 auto}
+.emergency-card__icon svg{width:16px;height:16px}
+.emergency-card__header h1{font-size:14px;margin:0 0 3px;font-weight:800}
+.emergency-card__header p{font-size:10px;color:#7a858d;margin:0}
+.emergency-warning{display:flex;gap:8px;align-items:flex-start;padding:10px 18px;background:#fff8e9;border-bottom:1px solid #f4e4be;color:#c56c00;font-size:10px;line-height:1.45}
+.emergency-warning svg{width:13px;height:13px;flex:0 0 auto;margin-top:1px}
+.emergency-steps{display:grid;grid-template-columns:repeat(3,1fr);padding:12px 18px 10px;border-bottom:1px solid #e7eaec}
+.emergency-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;color:#9ba4aa;font-size:9px}
+.emergency-step:not(:last-child)::after{content:"";position:absolute;top:10px;left:62%;right:-38%;height:1px;background:#e5e8ea}
+.emergency-step span{position:relative;z-index:1;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#edf0f2;color:#a4adb3}
+.emergency-step span svg{width:11px;height:11px}
+.emergency-step small{font-size:9px}
+.emergency-step--active{color:#df7900}
+.emergency-step--active span{background:#e77d00;color:#fff}
+.emergency-step--complete{color:#23875a}
+.emergency-step--complete span{background:#daf3e4;color:#23875a}
+.emergency-step--complete:not(:last-child)::after{background:#62ba88}
+.emergency-step-content{padding:20px 18px 18px}
+.emergency-step-heading{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+.emergency-step-heading h2{font-size:14px;margin:0 0 4px;font-weight:800}
+.emergency-step-heading p{margin:0;color:#6d7981;font-size:10px;line-height:1.5}
+.emergency-step-heading>span{color:#8c969c;font-size:10px;white-space:nowrap}
+.emergency-field{display:grid;gap:6px;font-size:10px;font-weight:700;color:#536069;margin:14px 0}
+.emergency-field input,.emergency-field select{width:100%;min-height:42px;border:1px solid #dce1e4;border-radius:6px;background:#fff;padding:10px 12px;color:#17212b;font:inherit;box-sizing:border-box;outline:none}
+.emergency-field input:focus,.emergency-field select:focus{border-color:#e77d00;box-shadow:0 0 0 3px rgba(231,125,0,.12)}
+.emergency-field textarea{width:100%;border:1px solid #dce1e4;border-radius:6px;background:#fff;padding:10px 12px;color:#17212b;font:inherit;box-sizing:border-box;resize:vertical;outline:none}.emergency-field textarea:focus{border-color:#e77d00;box-shadow:0 0 0 3px rgba(231,125,0,.12)}
+.emergency-reasons{border:0;padding:0;margin:18px 0 0;min-width:0}.emergency-reasons legend{font-size:10px;font-weight:700;color:#536069;margin-bottom:8px}.emergency-reason-list{display:grid;gap:7px}.emergency-reason-option{display:flex;align-items:center;gap:10px;padding:10px 11px;border:1px solid #e1e5e8;border-radius:6px;background:#fff;cursor:pointer;transition:border-color .15s,background .15s}.emergency-reason-option:hover{border-color:#e77d00;background:#fffaf3}.emergency-reason-option--selected{border-color:#e77d00;background:#fff8ed;box-shadow:0 0 0 1px rgba(231,125,0,.12)}.emergency-reason-option input{position:absolute;opacity:0;pointer-events:none}.emergency-reason-option__radio{width:14px;height:14px;border:1px solid #aab4ba;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}.emergency-reason-option--selected .emergency-reason-option__radio{border-color:#e77d00}.emergency-reason-option--selected .emergency-reason-option__radio::after{content:"";width:7px;height:7px;border-radius:50%;background:#e77d00}.emergency-reason-option strong{display:block;font-size:10px;color:#26343d;margin-bottom:2px}.emergency-reason-option small{display:block;font-size:9px;color:#7d888e}.emergency-other-field{margin-top:10px}
+.emergency-demo{color:#9aa3a8;font-size:9px;margin:0 0 14px}
+.emergency-notice{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border:1px solid #f2d5a1;border-radius:6px;background:#fff9ed;color:#a56314;font-size:10px;line-height:1.4;margin:14px 0}
+.emergency-notice svg{width:13px;height:13px;flex:0 0 auto}
+.emergency-notice--success{border-color:#b9e6ca;background:#effaf3;color:#23875a}
+.emergency-search-input{position:relative}
+.emergency-search-input svg{position:absolute;left:12px;top:50%;width:15px;height:15px;transform:translateY(-50%);color:#9ba5ab}
+.emergency-search-input input{padding-left:36px}
+.emergency-results{display:grid;gap:8px;max-height:270px;overflow:auto}
+.emergency-patient{display:grid;grid-template-columns:32px 1fr 16px;align-items:center;gap:10px;width:100%;text-align:left;padding:10px;border:1px solid #e2e6e8;border-radius:6px;background:#fff;color:#17212b;cursor:pointer;font:inherit}
+.emergency-patient:hover{border-color:#e77d00;background:#fffaf3}
+.emergency-patient__avatar{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#e7f2f8;color:#1475a4;font-size:10px;font-weight:800;flex:0 0 auto}
+.emergency-patient strong{display:block;font-size:11px;margin-bottom:3px}
+.emergency-patient small{display:block;color:#7b878d;font-size:9px}
+.emergency-patient>svg{width:14px;height:14px;color:#8a959b}
+.emergency-empty{padding:20px;text-align:center;color:#818c92;font-size:11px}
+.emergency-error{display:flex;align-items:flex-start;gap:7px;padding:10px 12px;background:#fff1f0;border:1px solid #efb6b1;border-radius:6px;color:#b83d35;font-size:10px;line-height:1.4;margin:12px 0}
+.emergency-error svg{width:13px;height:13px;flex:0 0 auto}
+.emergency-audit-note{display:flex;align-items:center;gap:6px;color:#8c969c;font-size:9px;margin:16px 0 0}
+.emergency-audit-note svg{width:13px;height:13px}
+.emergency-secondary-action{display:block;margin:14px auto 0;border:0;background:none;color:#7a858b;font:inherit;font-size:10px;cursor:pointer;text-decoration:underline}
+.emergency-card .btn{min-height:42px;border-radius:6px;text-transform:none;font-size:11px}
+.emergency-action-row{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.emergency-action-row .btn{width:auto;padding:0 14px}
+.emergency-selected-patient{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #b9e6ca;background:#effaf3;border-radius:6px}
+.emergency-selected-patient>span:nth-child(2){flex:1}
+.emergency-selected-patient strong{display:block;font-size:11px}
+.emergency-selected-patient small{display:block;color:#6f7d83;font-size:9px;margin-top:3px}
+.emergency-selected-patient .pill{font-size:9px}
+.emergency-page--record{background:#f3f5f6}
+.emergency-record-wrap{max-width:980px;margin:0 auto;padding:26px 20px 60px}
+.emergency-record-header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:14px}
+.emergency-record-header p{font-size:11px;color:#df7900;font-weight:700;margin:0 0 4px}.emergency-record-header h1{font-size:24px;margin:0}
+.emergency-session-banner{display:flex;align-items:center;gap:8px;background:#fff2d9;border:1px solid #f1d39c;color:#9a5b0d;padding:11px 14px;border-radius:7px;font-size:11px;margin-bottom:14px}.emergency-session-banner svg{width:15px;height:15px}
+.emergency-record-patient-card{max-width:900px;padding:20px 24px}.emergency-record-patient-card .pr-header{margin-bottom:14px}.emergency-record-patient-card .pr-panel-body{padding-top:2px}.emergency-record-access-card{max-width:900px;padding:18px 24px}.emergency-record-access-card .pr-access-log{padding:0}.emergency-record-access-card .pr-access-log h3{margin-top:0}.emergency-record-access-card .pr-access-log ul{margin-bottom:0}
+.emergency-record-card{background:#fff;border:1px solid #e1e5e8;border-radius:8px;padding:20px;margin-bottom:14px}.emergency-record-identity{display:flex;align-items:center;gap:12px}.emergency-record-identity>div{flex:1}.emergency-record-identity h2{font-size:16px;margin:0 0 4px}.emergency-record-identity p{font-size:11px;color:#77838a;margin:0}.emergency-record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.emergency-record-field{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;background:#fff;border:1px solid #e1e5e8;border-radius:8px;padding:16px}.emergency-record-field h2{font-size:12px;margin:0 0 8px}.emergency-record-field p{font-size:13px;font-weight:700;margin:0;color:#17212b}.emergency-record-field__locked{display:flex;align-items:center;gap:5px;color:#a06b20!important;font-size:11px!important}.emergency-record-field__locked svg{width:13px;height:13px}.emergency-record-field--sensitive{border-color:#f2d5a1}
+@media(max-width:600px){.emergency-wrap{padding:22px 12px 48px}.emergency-card__header{padding:14px}.emergency-warning,.emergency-steps{padding-left:14px;padding-right:14px}.emergency-step-content{padding:18px 14px 16px}.emergency-step-heading{display:block}.emergency-step-heading>span{display:block;margin-top:7px}.emergency-action-row{display:grid;grid-template-columns:1fr 1fr}.emergency-action-row .btn:last-child{grid-column:1/-1}.emergency-record-wrap{padding:20px 14px 48px}.emergency-record-header{align-items:flex-start;flex-direction:column}.emergency-record-header .btn{width:100%}.emergency-record-grid{grid-template-columns:1fr}.emergency-record-identity{align-items:flex-start;flex-wrap:wrap}.emergency-record-identity .pill{margin-left:42px}}
+@media(max-width:600px){.emergency-record-patient-card,.emergency-record-access-card{padding:14px;margin-left:0;margin-right:0}.emergency-record-patient-card .pr-header__name-row{flex-wrap:wrap}.emergency-record-patient-card .pr-tabs{overflow-x:auto}.emergency-record-patient-card .pr-tabs__item{white-space:nowrap;padding-left:8px;padding-right:8px}.emergency-record-patient-card .pr-grid{grid-template-columns:repeat(2,1fr)}}

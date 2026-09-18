@@ -1,0 +1,198 @@
+/* Sidebar.css */
+
+.dash-sidebar {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-6) var(--sp-4);
+  min-height: 100vh;
+  width: 240px;
+  flex-shrink: 0;
+  transition: width var(--transition-md);
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+/* Brand */
+.dash-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-2) var(--sp-6);
+}
+.dash-brand__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--color-action);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dash-brand__icon svg { width: 18px; height: 18px; }
+.dash-brand__name {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.3px;
+  color: var(--color-text);
+  flex: 1;
+}
+.dash-brand__toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: none; /* shown at breakpoint */
+  align-items: center;
+}
+.dash-brand__toggle svg { width: 16px; height: 16px; }
+
+/* Nav */
+.dash-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.dash-nav__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px var(--sp-3);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-2);
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+  min-height: 44px;
+}
+.dash-nav__item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.dash-nav__item:hover {
+  background: var(--color-gray-100);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.dash-nav__item--active {
+  background: var(--color-action-light);
+  color: var(--color-action);
+}
+.dash-nav__label { overflow: hidden; text-overflow: ellipsis; }
+
+/* Footer */
+.dash-sidebar__footer {
+  margin-top: auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.dash-sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-2);
+  overflow: hidden;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+.dash-sidebar__user:hover { background: var(--color-gray-50); border-radius: var(--radius-md); }
+.dash-sidebar__user-info {
+  overflow: hidden;
+  min-width: 0;
+}
+.dash-sidebar__user strong {
+  display: block;
+  font-size: 14px;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dash-sidebar__user small {
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+.dash-signout {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  border: none;
+  background: none;
+  color: var(--color-text-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px var(--sp-3);
+  border-radius: var(--radius-md);
+  width: 100%;
+  transition: background var(--transition), color var(--transition);
+  min-height: 44px;
+  font-family: var(--font-sans);
+}
+.dash-signout svg { width: 17px; height: 17px; flex-shrink: 0; }
+.dash-signout:hover { color: var(--color-danger); background: var(--color-danger-light); }
+
+/* Mobile overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,31,36,0.4);
+  z-index: 99;
+}
+.sidebar-mobile-trigger {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 101;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-2);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+.sidebar-mobile-trigger svg { width: 18px; height: 18px; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .dash-sidebar { width: 200px; }
+}
+
+@media (max-width: 768px) {
+  .dash-brand__toggle { display: flex; }
+  .dash-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    transform: translateX(0);
+    width: 240px;
+    box-shadow: var(--shadow-lg);
+    transition: transform var(--transition-md);
+  }
+  .dash-sidebar--collapsed {
+    transform: translateX(-100%);
+  }
+  .sidebar-overlay { display: block; }
+  .sidebar-mobile-trigger { display: flex; }
+}
