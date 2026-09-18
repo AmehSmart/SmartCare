@@ -15,6 +15,7 @@ export default function PatientWorklist() {
     const [patients, setPatients] = useState([]);
     const [query, setQuery] = useState("");
     const [scopeOnly, setScopeOnly] = useState(false);
+    const [statusFilter, setStatusFilter] = useState("All");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -22,7 +23,7 @@ export default function PatientWorklist() {
 
         async function loadPatients() {
             try {
-                const data = await getPatients();
+                const data = await getPatients(user);
                 if (mounted) {
                     setPatients(data);
                 }
@@ -38,12 +39,21 @@ export default function PatientWorklist() {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [user]);
+
+    const statusOptions = useMemo(() => {
+        const statuses = new Set(["All"]);
+        patients.forEach((patient) => {
+            if (patient.status) statuses.add(patient.status);
+        });
+        return [...statuses];
+    }, [patients]);
 
     const filtered = useMemo(() => patients.filter((patient) => {
         const matchesQuery = `${patient.name} ${patient.id} ${patient.ward}`.toLowerCase().includes(query.toLowerCase());
-        return matchesQuery && (!scopeOnly || patient.scope === "In scope");
-    }), [patients, query, scopeOnly]);
+        const matchesStatus = statusFilter === "All" || patient.status === statusFilter;
+        return matchesQuery && matchesStatus && (!scopeOnly || patient.scope === "In scope");
+    }), [patients, query, scopeOnly, statusFilter]);
 
     return (
         <div className="worklist-page">
@@ -57,7 +67,7 @@ export default function PatientWorklist() {
                             <h1>Patients</h1>
                             <p>Search is limited to your current role, ward, and shift scope.</p>
                         </div>
-                        <Pill tone="blue"><Icon name="shield" /> Ward A · Day shift</Pill>
+                        <Pill tone="blue"><Icon name="shield" /> {user?.ward || "All Units"} · {user?.shift || "All Shifts"}</Pill>
                     </div>
 
                     <section className="worklist-layout">
@@ -66,6 +76,23 @@ export default function PatientWorklist() {
                                 <span>Search patients</span>
                                 <div><Icon name="search" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, ID, or ward" /></div>
                             </label>
+
+                            <div className="worklist-status-group" aria-label="Status filter">
+                                <span>Status</span>
+                                <div className="worklist-status-options">
+                                    {statusOptions.map((status) => (
+                                        <button
+                                            key={status}
+                                            type="button"
+                                            className={`worklist-status-pill${statusFilter === status ? " worklist-status-pill--active" : ""}`}
+                                            onClick={() => setStatusFilter(status)}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <label className="worklist-check"><input type="checkbox" checked={scopeOnly} onChange={(event) => setScopeOnly(event.target.checked)} /> Show only in-scope records</label>
                             <div className="worklist-filter-note"><Icon name="lock" /><span>Patient visibility is enforced by the policy service. Hidden fields never reach this screen.</span></div>
                         </aside>
@@ -74,7 +101,7 @@ export default function PatientWorklist() {
                             <div className="worklist-results__header"><h2>{loading ? "Loading..." : `${filtered.length} patients`}</h2><span>Updated just now</span></div>
                             {loading ? (
                                 <div className="worklist-empty"><Icon name="search" /><h2>Loading patients</h2><p>Please wait while the patient list is refreshed.</p></div>
-                            ) : filtered.length === 0 ? <div className="worklist-empty"><Icon name="search" /><h2>No matching patients</h2><p>Try a different name, patient ID, or ward.</p></div> : <div className="patient-result-list">{filtered.map((patient) => <PatientResult key={patient.id} patient={patient} />)}</div>}
+                            ) : filtered.length === 0 ? <div className="worklist-empty"><Icon name="search" /><h2>No matching patients</h2><p>Try a different name, patient ID, ward, or status filter.</p></div> : <div className="patient-result-list">{filtered.map((patient) => <PatientResult key={patient.id} patient={patient} />)}</div>}
                         </section>
                     </section>
                 </main>

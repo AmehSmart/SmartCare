@@ -1,11 +1,45 @@
 import Icon from "../../../components/ui/Icon";
 import Pill from "../../../components/ui/Pill";
 
-export default function OverviewTab({ patient }) {
+export default function OverviewTab({ patient, assignments = [], isAdmin = false, onAssign, onRemove }) {
     const fieldAccess = patient?.fieldAccess || {};
+    const activeAssignment = assignments.find((assignment) => assignment.status !== "Removed") || null;
 
     return (
         <div className="pr-panel-body">
+            <section className="pr-section">
+                <div className="pr-status-row">
+                    <h3>
+                        <Icon name="heartbeat" /> Current status
+                    </h3>
+                    <Pill tone={patient?.status === "Active" ? "green" : "gray"}>{patient?.status || "Unknown"}</Pill>
+                </div>
+                {isAdmin && (
+                    <div className="pr-assignment-box">
+                        <div>
+                            <span className="pr-assignment-label">Assigned care team</span>
+                            {activeAssignment ? (
+                                <>
+                                    <strong>{activeAssignment.staffName}</strong>
+                                    <small>{activeAssignment.assignmentType} · {activeAssignment.ward}</small>
+                                </>
+                            ) : (
+                                <>
+                                    <strong>No staff currently assigned</strong>
+                                    <small>Use assignment controls to assign a clinician.</small>
+                                </>
+                            )}
+                        </div>
+                        <div className="pr-assignment-actions">
+                            {activeAssignment && (
+                                <button type="button" className="pr-assignment-button pr-assignment-button--secondary" onClick={onRemove}>Remove assignment</button>
+                            )}
+                            <button type="button" className="pr-assignment-button" onClick={onAssign}>{activeAssignment ? "Reassign staff" : "Assign staff"}</button>
+                        </div>
+                    </div>
+                )}
+            </section>
+
             <section className="pr-section">
                 <h3>
                     <Icon name="id-card" /> Demographics

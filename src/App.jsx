@@ -11,7 +11,10 @@ import EmergencyLogin, { EmergencyPatientAccess } from "./pages/EmergencyLogin/E
 import Profile from "./pages/Profile/Profile";
 import Registration from "./pages/Registration/Registration";
 import { BreakGlass, EmergencySummary, Passport, PassportQR, Scan, PassportConsent, AuditQueue, AuditVerify, AdminRoster, AdminTOTP } from "./pages/AdditionalPages";
+import MyPatients from "./pages/MyPatients/MyPatients";
+import MyAccess from "./pages/MyAccess/MyAccess";
 import { useAuth } from "./context/useAuth";
+import { hasPermission, isAdministrator } from "./services/api/roleService";
 import "./App.css";
 
 function NotFound() {
@@ -44,6 +47,20 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function PermissionRoute({ permission, children }) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!hasPermission(user, permission)) {
+    return <Navigate to={isAdministrator(user) ? "/dashboard" : "/my-patients"} replace />;
+  }
+
+  return children;
+}
+
 function EmergencyRoute({ children, activeOnly = false }) {
   const { isAuthenticated, hasEmergencyAccess, hasActiveEmergencyAccess } = useAuth();
   const location = useLocation();
@@ -70,6 +87,8 @@ function App() {
       {/* Auth */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Registration />} />
+      <Route path="/register/staff" element={<Registration initialType="staff" />} />
+      <Route path="/register/admin" element={<Registration initialType="admin" />} />
       <Route path="/emergency-login" element={<EmergencyLogin />} />
       <Route path="/emergency/search" element={<EmergencyRoute><EmergencyLogin step="patient" /></EmergencyRoute>} />
       <Route path="/emergency/reason" element={<EmergencyRoute><EmergencyLogin step="reason" /></EmergencyRoute>} />
@@ -78,22 +97,32 @@ function App() {
       {/* Clinical staff views */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/patients" element={<ProtectedRoute><PatientWorklist /></ProtectedRoute>} />
-      <Route path="/patients/:patientId" element={<ProtectedRoute><PatientRecords /></ProtectedRoute>} />
+      <Route path="/my-patients" element={<ProtectedRoute><PermissionRoute permission="view_my_patients"><MyPatients /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/my-access" element={<ProtectedRoute><PermissionRoute permission="view_own_access"><MyAccess /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/patients" element={<ProtectedRoute><PermissionRoute permission="view_patients"><PatientWorklist /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/patients/:patientId" element={<ProtectedRoute><PermissionRoute permission="view_patients"><PatientRecords /></PermissionRoute></ProtectedRoute>} />
       <Route path="/patient-records" element={<Navigate to="/patients" replace />} />
-      <Route path="/patients/:patientId/denied" element={<ProtectedRoute><ScopeDenied /></ProtectedRoute>} />
-      <Route path="/patients/:patientId/breakglass" element={<ProtectedRoute><BreakGlass /></ProtectedRoute>} />
+      <Route path="/patients/:patientId/denied" element={<ProtectedRoute><PermissionRoute permission="view_patients"><ScopeDenied /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/patients/:patientId/breakglass" element={<ProtectedRoute><PermissionRoute permission="view_patients"><BreakGlass /></PermissionRoute></ProtectedRoute>} />
       <Route path="/patients/:patientId/emergency-summary" element={<ProtectedRoute><EmergencySummary /></ProtectedRoute>} />
 
       {/* Audit */}
-      <Route path="/audit-log" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
-      <Route path="/audit/queue" element={<ProtectedRoute><AuditQueue /></ProtectedRoute>} />
-      <Route path="/audit/verify" element={<ProtectedRoute><AuditVerify /></ProtectedRoute>} />
-      <Route path="/audit/events/:id" element={<ProtectedRoute><AuditEventDetail /></ProtectedRoute>} />
+      <Route path="/audit-log" element={<ProtectedRoute><PermissionRoute permission="view_audit_logs"><AuditLog /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/audit/queue" element={<ProtectedRoute><PermissionRoute permission="view_security_alerts"><AuditQueue /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/audit/verify" element={<ProtectedRoute><PermissionRoute permission="view_audit_logs"><AuditVerify /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/audit/events/:id" element={<ProtectedRoute><PermissionRoute permission="view_audit_logs"><AuditEventDetail /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/audit-logs" element={<Navigate to="/audit-log" replace />} />
+      <Route path="/security" element={<Navigate to="/audit/queue" replace />} />
 
       {/* Admin */}
-      <Route path="/staff-roles" element={<ProtectedRoute><StaffRoles /></ProtectedRoute>} />
-      <Route path="/admin/roster" element={<ProtectedRoute><AdminRoster /></ProtectedRoute>} />
+      <Route path="/staff-roles" element={<ProtectedRoute><PermissionRoute permission="manage_roles"><StaffRoles /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/assignments" element={<ProtectedRoute><PermissionRoute permission="manage_assignments"><StaffRoles /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/admin/roster" element={<ProtectedRoute><PermissionRoute permission="assign_roles"><AdminRoster /></PermissionRoute></ProtectedRoute>} />
+      <Route path="/staff" element={<Navigate to="/staff-roles" replace />} />
+      <Route path="/roles" element={<Navigate to="/staff-roles" replace />} />
+      <Route path="/permissions" element={<Navigate to="/staff-roles" replace />} />
+      <Route path="/emergency-access" element={<Navigate to="/admin/roster" replace />} />
+      <Route path="/admin-settings" element={<Navigate to="/admin/totp" replace />} />
       <Route path="/admin/totp" element={<ProtectedRoute><AdminTOTP /></ProtectedRoute>} />
 
       {/* Patient passport (PWA) */}

@@ -2,12 +2,15 @@ import { NavLink, useNavigate } from "react-router-dom";
 import "./Sidebar.css";
 import Icon from "../ui/Icon";
 import Avatar from "../ui/Avatar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/useAuth";
+import { hasPermission } from "../../services/api/roleService";
 
 const ROUTE_MAP = {
     dashboard: "/dashboard",
+    "my-patients": "/my-patients",
     records: "/patients",
+    "my-access": "/my-access",
     audit: "/audit-log",
     "audit-queue": "/audit/queue",
     staff: "/staff-roles",
@@ -18,7 +21,19 @@ const ROUTE_MAP = {
 export default function Sidebar({ navItems, user }) {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { logout, user: authenticatedUser } = useAuth();
+    const displayUser = authenticatedUser || user;
+
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === "Escape") {
+                setCollapsed(true);
+            }
+        };
+
+        window.addEventListener("keydown", handleEscape);
+        return () => window.removeEventListener("keydown", handleEscape);
+    }, []);
 
     const handleSignOut = () => {
         logout();
@@ -42,7 +57,15 @@ export default function Sidebar({ navItems, user }) {
                 <div
                     className="sidebar-overlay"
                     onClick={() => setCollapsed(true)}
-                    aria-hidden="true"
+                    aria-label="Close navigation menu"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setCollapsed(true);
+                        }
+                    }}
                 />
             )}
 
@@ -62,31 +85,34 @@ export default function Sidebar({ navItems, user }) {
                 </div>
 
                 <nav className="dash-nav" aria-label="Main navigation">
-                    {navItems.map((item) => {
-                        const to = ROUTE_MAP[item.key];
-                        if (!to) return null;
-                        return (
-                            <NavLink
-                                key={item.key}
-                                to={to}
-                                className={({ isActive }) =>
-                                    `dash-nav__item${isActive ? " dash-nav__item--active" : ""}`
-                                }
-                                title={item.label}
-                            >
-                                <Icon name={item.icon} />
-                                <span className="dash-nav__label">{item.label}</span>
-                            </NavLink>
-                        );
-                    })}
+                    {navItems
+                        .filter((item) => item.key !== "my-patients" || displayUser?.role !== "Administrator")
+                        .filter((item) => !item.permission || hasPermission(displayUser, item.permission))
+                        .map((item) => {
+                            const to = ROUTE_MAP[item.key];
+                            if (!to) return null;
+                            return (
+                                <NavLink
+                                    key={item.key}
+                                    to={to}
+                                    className={({ isActive }) =>
+                                        `dash-nav__item${isActive ? " dash-nav__item--active" : ""}`
+                                    }
+                                    title={item.label}
+                                >
+                                    <Icon name={item.icon} />
+                                    <span className="dash-nav__label">{item.label}</span>
+                                </NavLink>
+                            );
+                        })}
                 </nav>
 
                 <div className="dash-sidebar__footer">
                     <button type="button" className="dash-sidebar__user" onClick={() => navigate("/profile")} aria-label="Open profile">
-                        <Avatar initials={user.initials} size="sm" />
+                        <Avatar initials={displayUser.initials} size="sm" />
                         <div className="dash-sidebar__user-info">
-                            <strong>{user.shortName}</strong>
-                            <small>{user.id}</small>
+                            <strong>{displayUser.shortName}</strong>
+                            <small>{displayUser.id}</small>
                         </div>
                     </button>
                     <button

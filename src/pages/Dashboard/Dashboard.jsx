@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import Sidebar from "../../components/layout/Sidebar";
@@ -17,11 +17,10 @@ import Modal from "../../components/ui/Modal";
 import Button from "../../components/ui/Button";
 import Pill from "../../components/ui/Pill";
 import Avatar from "../../components/ui/Avatar";
+import { getPatientAssignments, getUserPermissions, hasPermission } from "../../services/api/roleService";
 
-const STATS = [
+const STAFF_STATS = [
     { label: "Active Patients", value: 10, note: "under your care", icon: "users", tint: "blue" },
-    { label: "Fields Accessed", value: 1, note: "by you, all time", icon: "file", tint: "green" },
-    { label: "Access Denied", value: 0, note: "No violations", icon: "x-circle", tint: "gray" },
 ];
 
 const RECENT_ACTIVITY = [
@@ -32,18 +31,9 @@ const RECENT_ACTIVITY = [
     { tag: "Break glass", tagType: "warning", name: "Fatima Abdullahi", time: "4d ago", flagged: true },
 ];
 
-const PERMISSIONS = [
-    "Demographics",
-    "Vitals",
-    "Medications",
-    "Allergies",
-    "Clinical Notes",
-    "HIV Status",
-    "Mental Health",
-];
-
 export default function Dashboard() {
     const [activeNav, setActiveNav] = useState("dashboard");
+    const [allPatients, setAllPatients] = useState([]);
     const [activePatients, setActivePatients] = useState([]);
     const [patientsLoading, setPatientsLoading] = useState(true);
     const [patientsError, setPatientsError] = useState("");
@@ -53,10 +43,32 @@ export default function Dashboard() {
 
     const doctor = {
         ...(user || CURRENT_USER),
-        ward: "Internal Medicine",
         accessCode: "Active",
         fieldsAccess: "10 fields",
     };
+    const isAdmin = hasPermission(doctor, "manage_roles");
+    const patientMetrics = useMemo(() => {
+        const totalPatients = allPatients.length;
+        const activePatientsCount = allPatients.filter((patient) => patient.status === "Active").length;
+        const dischargedPatientsCount = allPatients.filter((patient) => patient.status === "Discharged").length;
+        const assignmentRecords = getPatientAssignments().filter((assignment) => assignment.status !== "Removed");
+        const assignedPatientIds = new Set(assignmentRecords.map((assignment) => assignment.patientId));
+        const patientsRequiringAssignment = allPatients.filter((patient) => !assignedPatientIds.has(patient.id)).length;
+
+        return {
+            totalPatients,
+            activePatientsCount,
+            dischargedPatientsCount,
+            patientsRequiringAssignment,
+        };
+    }, [allPatients]);
+    const stats = isAdmin ? [
+        { label: "Total Patients", value: patientMetrics.totalPatients, note: "registered cases", icon: "users", tint: "blue" },
+        { label: "Active Patients", value: patientMetrics.activePatientsCount, note: "currently active", icon: "heart", tint: "green" },
+        { label: "Discharged Patients", value: patientMetrics.dischargedPatientsCount, note: "completed cases", icon: "check", tint: "gray" },
+        { label: "Patients Requiring Assignment", value: patientMetrics.patientsRequiringAssignment, note: "awaiting assignment", icon: "file", tint: "amber" },
+    ] : STAFF_STATS;
+    const permissions = getUserPermissions(doctor);
 
     const today = new Date().toLocaleDateString("en-GB", {
         weekday: "short",
@@ -68,6 +80,8 @@ export default function Dashboard() {
     const handleStatSelect = (label) => {
         if (label === "Active Patients") {
             setActivePatientsOpen(true);
+        } else if (["Total Patients", "Discharged Patients", "Patients Requiring Assignment"].includes(label)) {
+            navigate("/patients");
         } else if (label === "Fields Accessed") {
             navigate("/audit-log");
         } else if (label === "Access Denied") {
@@ -78,9 +92,10 @@ export default function Dashboard() {
     useEffect(() => {
         let mounted = true;
 
-        getPatients()
+        getPatients(user || CURRENT_USER)
             .then((patients) => {
                 if (mounted) {
+                    setAllPatients(patients);
                     setActivePatients(patients.filter((patient) => patient.status === "Active"));
                 }
             })
@@ -94,7 +109,7 @@ export default function Dashboard() {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [user]);
 
     return (
         <div className="dash">
@@ -122,7 +137,7 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    <StatsRow stats={STATS} onSelect={handleStatSelect} />
+                    <StatsRow stats={stats} onSelect={handleStatSelect} />
                     <ProfileCard doctor={doctor} />
 
                     <div className="content-row">
@@ -138,8 +153,8 @@ export default function Dashboard() {
             </div>
 
             <aside className="dash-rail">
-                <RecentActivity activity={RECENT_ACTIVITY} />
-                <PermissionsPanel permissions={PERMISSIONS} />
+                {isAdmin && <RecentActivity activity={RECENT_ACTIVITY} />}
+                <PermissionsPanel permissions={permissions} />
             </aside>
 
             <ActivePatientsModal

@@ -1,10 +1,12 @@
 export const NAV_ITEMS = [
     { key: "dashboard",    label: "Dashboard",      icon: "grid" },
-    { key: "records",      label: "Patient Records", icon: "file" },
-    { key: "audit",        label: "Audit Log",       icon: "audit" },
-    { key: "audit-queue",  label: "Audit Queue",     icon: "bell" },
-    { key: "staff",        label: "Staff & Roles",   icon: "users" },
-    { key: "roster",       label: "Roster Mgmt.",    icon: "calendar" },
+    { key: "my-patients",  label: "My Patients",     icon: "users", permission: "view_my_patients" },
+    { key: "records",      label: "Patients",        icon: "file", permission: "view_patients" },
+    { key: "my-access",    label: "My Access",       icon: "lock", permission: "view_own_access" },
+    { key: "audit",        label: "Audit Log",       icon: "audit", permission: "view_audit_logs" },
+    { key: "audit-queue",  label: "Audit Queue",     icon: "bell", permission: "view_security_alerts" },
+    { key: "staff",        label: "Staff & Roles",   icon: "users", permission: "manage_roles" },
+    { key: "roster",       label: "Roster Mgmt.",    icon: "calendar", permission: "assign_roles" },
     { key: "totp",         label: "TOTP Setup",      icon: "key" },
 ];
 

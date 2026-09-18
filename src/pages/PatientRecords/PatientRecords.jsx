@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import "./PatientRecords.css";
 import Sidebar from "../../components/layout/Sidebar";
 import Icon from "../../components/ui/Icon";
+import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
 import { NAV_ITEMS, CURRENT_USER } from "../../components/layout/navConfig";
 import { getPatientById, getPatientFieldAccess } from "../../services/api/patientApi";
+import { assignPatientToStaff, getPatientAssignmentsForPatient, getStaffDirectory, removePatientAssignment, hasPermission } from "../../services/api/roleService";
 import PatientHeader from "./components/PatientHeader";
 import PatientTabs from "./components/PatientTabs";
 import OverviewTab from "./components/OverviewTab";
@@ -35,10 +38,16 @@ export default function PatientRecords() {
     const currentUser = user || CURRENT_USER;
     const [activeTab, setActiveTab] = useState("overview");
     const [patient, setPatient] = useState(null);
+    const [assignments, setAssignments] = useState([]);
+    const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+    const [assignmentSearch, setAssignmentSearch] = useState("");
+    const [assignmentType, setAssignmentType] = useState("Primary Care");
+    const [selectedStaffId, setSelectedStaffId] = useState("");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let mounted = true;
+        const accessUser = user || CURRENT_USER;
 
         async function loadPatient() {
             try {
@@ -46,9 +55,10 @@ export default function PatientRecords() {
                     return;
                 }
 
-                const nextPatient = await getPatientById(patientId);
+                const nextPatient = await getPatientById(patientId, accessUser);
                 if (mounted) {
                     setPatient({
+                        id: nextPatient.id,
                         initials: nextPatient.initials,
                         name: nextPatient.name,
                         gender: nextPatient.gender,
@@ -59,10 +69,12 @@ export default function PatientRecords() {
                         dob: nextPatient.demographics?.dob || "Not available",
                         address: nextPatient.demographics?.address || "Not available",
                         phone: nextPatient.demographics?.phone || "Not available",
+                        status: nextPatient.status,
                         vitals: VITALS,
                         allergies: ["Latex (mild)"],
-                        fieldAccess: getPatientFieldAccess(nextPatient, currentUser.role),
+                        fieldAccess: getPatientFieldAccess(nextPatient, accessUser.role),
                     });
+                    setAssignments(getPatientAssignmentsForPatient(nextPatient.id));
                 }
             } finally {
                 if (mounted) {
@@ -76,14 +88,62 @@ export default function PatientRecords() {
         return () => {
             mounted = false;
         };
-    }, [patientId, currentUser.role]);
+    }, [patientId, user]);
+
+    const isAdmin = hasPermission(currentUser, "manage_assignments") || currentUser.role === "Administrator";
+
+    const eligibleStaff = useMemo(() => {
+        return getStaffDirectory().filter((member) => {
+            const roleName = String(member.role || "").toLowerCase();
+            if (member.roleId === "administrator") return false;
+            return roleName.includes("doctor") || roleName.includes("nurse") || roleName.includes("locum");
+        });
+    }, []);
+
+    const filteredStaff = useMemo(() => {
+        const normalized = assignmentSearch.trim().toLowerCase();
+        if (!normalized) return eligibleStaff;
+        return eligibleStaff.filter((member) => `${member.name} ${member.staffId} ${member.department} ${member.ward}`.toLowerCase().includes(normalized));
+    }, [assignmentSearch, eligibleStaff]);
+
+    const currentAssignment = assignments.find((assignment) => assignment.status !== "Removed") || null;
+
+    const openAssignmentModal = () => {
+        if (!patient) return;
+        const firstCandidate = eligibleStaff[0];
+        setSelectedStaffId(currentAssignment?.staffId || firstCandidate?.staffId || "");
+        setAssignmentSearch("");
+        setAssignmentType(currentAssignment?.assignmentType || "Primary Care");
+        setAssignmentModalOpen(true);
+    };
+
+    const handleAssign = () => {
+        if (!patient || !selectedStaffId) return;
+        assignPatientToStaff({
+            patientId: patient.id,
+            staffId: selectedStaffId,
+            assignmentType,
+            ward: patient.tag,
+            status: "Active",
+        });
+        setAssignments(getPatientAssignmentsForPatient(patient.id));
+        setAssignmentModalOpen(false);
+    };
+
+    const handleRemoveAssignment = () => {
+        if (!currentAssignment) return;
+        const confirmed = window.confirm("Remove this assignment from the patient care team?");
+        if (!confirmed) return;
+        removePatientAssignment(currentAssignment.id);
+        setAssignments(getPatientAssignmentsForPatient(patient.id));
+    };
 
     const renderTab = () => {
         if (!patient) return null;
 
         switch (activeTab) {
             case "overview":
-                return <OverviewTab patient={patient} />;
+                return <OverviewTab patient={patient} assignments={assignments} isAdmin={isAdmin} onAssign={openAssignmentModal} onRemove={handleRemoveAssignment} />;
             case "clinical":
                 return <ClinicalTab patient={patient} />;
             case "appointments":
@@ -179,6 +239,55 @@ export default function PatientRecords() {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                open={assignmentModalOpen}
+                onClose={() => setAssignmentModalOpen(false)}
+                title="Assign staff"
+                subtitle={`Patient: ${patient?.name || ""} · MRN: ${patient?.code || ""}`}
+                headerIcon="users"
+                footer={
+                    <>
+                        <Button type="button" variant="secondary" onClick={() => setAssignmentModalOpen(false)}>Cancel</Button>
+                        <Button type="button" onClick={handleAssign} disabled={!selectedStaffId}>Assign staff</Button>
+                    </>
+                }
+            >
+                <div className="assignment-modal">
+                    <label className="assignment-field">
+                        <span>Staff type</span>
+                        <select value={assignmentType} onChange={(event) => setAssignmentType(event.target.value)}>
+                            <option value="Primary Care">Primary Care</option>
+                            <option value="Attending Doctor">Attending Doctor</option>
+                            <option value="Nurse">Nurse</option>
+                        </select>
+                    </label>
+
+                    <label className="assignment-field">
+                        <span>Select staff</span>
+                        <input value={assignmentSearch} onChange={(event) => setAssignmentSearch(event.target.value)} placeholder="Search staff..." />
+                    </label>
+
+                    <div className="assignment-list">
+                        {filteredStaff.length === 0 ? (
+                            <p className="assignment-empty">No eligible staff found.</p>
+                        ) : filteredStaff.map((member) => (
+                            <button
+                                key={member.staffId}
+                                type="button"
+                                className={`assignment-option${selectedStaffId === member.staffId ? " assignment-option--selected" : ""}`}
+                                onClick={() => setSelectedStaffId(member.staffId)}
+                            >
+                                <div>
+                                    <strong>{member.name}</strong>
+                                    <small>{member.role} · {member.department} · {member.ward}</small>
+                                </div>
+                                <span>{member.staffId}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

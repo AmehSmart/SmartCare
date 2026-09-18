@@ -1,4 +1,5 @@
 import { STAFF_PROFILES } from "./mockData";
+import { getRolePermissions } from "./roleService";
 
 const PROFILE_OVERRIDES_KEY = "smartcare-profile-overrides";
 const LEGACY_PROFILE_OVERRIDES_KEY = "kofa-profile-overrides";
@@ -111,6 +112,28 @@ export async function registerStaff({ staffId, name, department, ward, pin }) {
   return { staffId: cleanStaffId, status: "pending_activation" };
 }
 
+export async function registerAdministrator({ email, password, invitationCode }) {
+  await new Promise((resolve) => setTimeout(resolve, 350));
+
+  const cleanEmail = String(email ?? "").trim();
+  const cleanPassword = String(password ?? "");
+  const cleanInvitationCode = String(invitationCode ?? "").trim();
+
+  if (!cleanEmail || !cleanPassword || !cleanInvitationCode) {
+    throw new Error("Administrator registration requires an email, password, and valid authorization code.");
+  }
+
+  if (cleanPassword.length < 8) {
+    throw new Error("Use a stronger password for administrator registration.");
+  }
+
+  if (cleanInvitationCode.length < 6) {
+    throw new Error("A valid administrator invitation code is required.");
+  }
+
+  throw new Error("Administrator registration is restricted to backend-authorized SmartCare personnel. This controlled workflow is not available in the current mock environment.");
+}
+
 function toUserProfile(profile) {
   return {
     id: profile.staffId,
@@ -122,6 +145,7 @@ function toUserProfile(profile) {
     ward: profile.ward,
     shift: profile.shift,
     accessLevel: profile.accessLevel,
+    permissions: getRolePermissions(profile.role),
   };
 }
 

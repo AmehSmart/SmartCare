@@ -40,7 +40,7 @@ export default function Login() {
 
                     <LoginForm onSubmit={handleSubmit} submitting={submitting} error={error} />
                     <DemoCredentials />
-                    <button type="button" className="login-register-link" onClick={() => navigate("/register")}>Register a staff account</button>
+                    <button type="button" className="login-register-link" onClick={() => navigate("/register")}>Create your account</button>
                     <EmergencyAccessButton onClick={() => navigate("/emergency-login")} />
                 </div>
             </main>
