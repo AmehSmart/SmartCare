@@ -92,7 +92,7 @@ export function BreakGlass() {
     }
   };
 
-  return <Shell title="Emergency access" subtitle="A temporary, fully audited override for an out-of-scope record."><section className="extra-card extra-card--narrow" role="dialog" aria-modal="true" aria-labelledby="breakglass-title"><div className="extra-emergency-icon"><Icon name="alert" /></div><h2 id="breakglass-title">Request break-glass access</h2><p>Access to this record is outside your assigned scope. State the emergency reason and verify your authenticator code.</p><label>Emergency reason<select value={reason} onChange={(e) => setReason(e.target.value)}>{Object.keys(REASON_CODES).map((r) => <option key={r}>{r}</option>)}</select></label><label>6-digit TOTP code<input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" placeholder="000000" /></label>{error && <p className="extra-form-error" role="alert">{error}</p>}<Button variant="breakglass" disabled={code.length !== 6 || submitting} onClick={handleGrant}>{submitting ? "Verifying..." : "Grant emergency access"}</Button><Link to={`/patients/${targetId}/denied`}>Cancel</Link></section></Shell>;
+  return <Shell title="Emergency access" subtitle="Immediate, accountable access when a patient cannot wait."><section className="extra-card extra-card--narrow" role="dialog" aria-modal="true" aria-labelledby="breakglass-title"><div className="extra-emergency-icon"><Icon name="alert" /></div><h2 id="breakglass-title">Break the glass</h2><p>This record is outside your assigned scope. Emergency care is never blocked - choose the reason and confirm it is you. The record opens straight away.</p><label>Why do you need access now?<select value={reason} onChange={(e) => setReason(e.target.value)}>{Object.keys(REASON_CODES).map((r) => <option key={r}>{r}</option>)}</select></label><label>Confirm it is you<input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" placeholder="Staff verification code" autoFocus /></label><p className="extra-muted" style={{ fontSize: 12 }}>Access is recorded before the record opens. It cannot be undone or hidden.</p>{error && <p className="extra-form-error" role="alert">{error}</p>}<Button variant="breakglass" disabled={code.length !== 6 || submitting} onClick={handleGrant}>{submitting ? "Opening..." : "Open record now"}</Button><Link to={`/patients/${targetId}/denied`}>Cancel</Link></section></Shell>;
 }
 
 export function EmergencySummary() {
@@ -150,6 +150,16 @@ export function EmergencySummary() {
         <Info title="Transfusion history" value="Last transfusion: 14 Jun 2026" />
         <Info title="Home facility" value="Lagos University Teaching Hospital" />
       </>}
+    </section>
+    <section className="extra-card" style={{ marginTop: 20 }}>
+      <div className="extra-actions">
+        <div>
+          <h2 style={{ marginBottom: 4 }}>Need more than the summary?</h2>
+          <p className="extra-muted">The highest-value information is shown first. Emergency care is never blocked - open the full record if the situation needs it.</p>
+        </div>
+        <Button variant="secondary" onClick={() => navigate(patientId ? `/patients/${patientId}` : "/dashboard")}>View full clinical record</Button>
+      </div>
+      <p className="extra-muted" style={{ fontSize: 12, marginTop: 8 }}>Opening the full record is recorded as a separate, accountable access event. Every expansion is visible to the audit officer.</p>
     </section>
   </Shell>;
 }
