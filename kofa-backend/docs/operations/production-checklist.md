@@ -1,0 +1,21 @@
+# Production checklist
+
+- [ ] Replace every development password, token, seed, and demo account.
+- [ ] Use HTTPS for all public traffic.
+- [ ] Provision the required audit mTLS certificates and enforce network policy between API and audit service.
+- [ ] Block API network access to the audit database.
+- [ ] Use distinct database owner, migrator, runtime, backup, and read-only support roles.
+- [ ] Store secrets in a managed secret system and signing keys in KMS/HSM.
+- [ ] Enable encrypted database storage, encrypted backups, and point-in-time recovery.
+- [ ] Export signed audit checkpoints to immutable cross-account storage.
+- [ ] Configure production CORS origins and trusted proxy hops explicitly.
+- [ ] Replace hackathon password login with managed identity, MFA, and secure recovery before production.
+- [ ] Add facility-approved retention schedules for clinical, consent, device, and audit data.
+- [ ] Complete privacy, clinical safety, legal, and data-protection impact assessments.
+- [ ] Run SAST, dependency, container, secret, and infrastructure scans in CI.
+- [ ] Run penetration tests for IDOR, broken access control, token confusion, and device replay.
+- [ ] Exercise database restore, audit verification, signing-key rotation, and identity outage drills.
+- [ ] Verify no PHI is present in logs, traces, metrics, errors, or analytics.
+- [ ] Validate the Synthea/FHIR importer in staging and replace it with an approved production ingestion and reconciliation pipeline.
+- [ ] Validate supported FHIR profiles and terminology against the deploying facility.
+- [ ] Confirm offline-client keystore, remote revocation, and device disposal procedures.

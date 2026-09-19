@@ -1,0 +1,342 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/clinical"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CLINICAL_DATABASE_URL")
+  directUrl = env("CLINICAL_MIGRATION_DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  CAREGIVER
+  DOCTOR
+  NURSE
+  RECORDS_CLERK
+  LOCUM_DOCTOR
+  LAB_PHARMACY
+  AUDIT_OFFICER
+  ADMIN
+}
+
+enum SourceLabel {
+  PATIENT_ENTERED
+  DOCUMENT_BACKED
+  HOSPITAL_VERIFIED
+}
+
+enum GrantStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum DeviceStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+model UserProfile {
+  id               String           @id @default(uuid()) @db.Uuid
+    authSubject      String           @unique @map("oidc_subject")
+  displayName      String           @map("display_name")
+    email            String?          @unique
+    passwordHash     String?          @map("password_hash")
+  facilityId       String?          @map("facility_id") @db.Uuid
+  patientId        String?          @map("patient_id") @db.Uuid
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  facility         Facility?        @relation(fields: [facilityId], references: [id])
+  patient          Patient?         @relation(fields: [patientId], references: [id])
+  assignments      Assignment[]
+  caseAttachments  CaseAttachment[]
+  caregiverLinks   CaregiverLink[]  @relation("Caregiver")
+  grantsCreated    ConsentGrant[]   @relation("GrantCreator")
+  emergencySessions EmergencySession[]
+  devices          RegisteredDevice[]
+  totpCredential   TotpCredential?
+  dutyContexts     DutyContext[]
+  assignedOrders   OrderLink[]       @relation("OrderAssignee")
+  createdOrders    OrderLink[]       @relation("OrderCreator")
+  notifications    Notification[]
+
+  @@map("user_profiles")
+}
+
+model Facility {
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String
+  code        String        @unique
+  contact     Json
+  createdAt   DateTime      @default(now()) @map("created_at")
+  users       UserProfile[]
+  wards       Ward[]
+  patients    Patient[]
+  signingKeys FacilitySigningKey[]
+
+  @@map("facilities")
+}
+
+model Ward {
+  id         String       @id @default(uuid()) @db.Uuid
+  facilityId String       @map("facility_id") @db.Uuid
+  name       String
+  code       String
+  active     Boolean      @default(true)
+  facility   Facility     @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  patients   Patient[]
+  assignments Assignment[]
+
+  @@unique([facilityId, code])
+  @@map("wards")
+}
+
+model Patient {
+  id              String           @id @default(uuid()) @db.Uuid
+  fhirId          String           @unique @map("fhir_id")
+  facilityId      String           @map("facility_id") @db.Uuid
+  currentWardId   String?          @map("current_ward_id") @db.Uuid
+  displayName     String           @map("display_name")
+  birthDate       DateTime?        @map("birth_date") @db.Date
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  facility        Facility         @relation(fields: [facilityId], references: [id])
+  currentWard     Ward?            @relation(fields: [currentWardId], references: [id])
+  resources       FhirResource[]
+  profiles        UserProfile[]
+  caseAttachments CaseAttachment[]
+  caregiverLinks  CaregiverLink[]
+  grants          ConsentGrant[]
+  emergencySessions EmergencySession[]
+  orderLinks       OrderLink[]
+  notifications    Notification[]
+
+  @@index([facilityId, currentWardId])
+  @@index([displayName])
+  @@map("patients")
+}
+
+model FhirResource {
+  id          String      @id @default(uuid()) @db.Uuid
+  patientId   String      @map("patient_id") @db.Uuid
+  resourceType String     @map("resource_type")
+  fhirId      String      @map("fhir_id")
+  version     Int         @default(1)
+  sourceLabel SourceLabel @default(HOSPITAL_VERIFIED) @map("source_label")
+  resource    Json
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceType, fhirId, version])
+  @@index([patientId, resourceType])
+  @@map("fhir_resources")
+}
+
+model Assignment {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  role        Role
+  wardId      String?  @map("ward_id") @db.Uuid
+  startsAt    DateTime @map("starts_at")
+  endsAt      DateTime @map("ends_at")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ward        Ward?    @relation(fields: [wardId], references: [id])
+  dutyContexts DutyContext[]
+
+  @@index([userId, startsAt, endsAt])
+  @@index([wardId, startsAt, endsAt])
+  @@map("assignments")
+}
+
+model CaseAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  patientId String   @map("patient_id") @db.Uuid
+  startsAt  DateTime @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, patientId, startsAt])
+  @@index([patientId, startsAt, endsAt])
+  @@map("case_attachments")
+}
+
+model CaregiverLink {
+  id          String   @id @default(uuid()) @db.Uuid
+  caregiverId String   @map("caregiver_id") @db.Uuid
+  patientId   String   @map("patient_id") @db.Uuid
+  startsAt    DateTime @default(now()) @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  caregiver   UserProfile @relation("Caregiver", fields: [caregiverId], references: [id], onDelete: Cascade)
+  patient     Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([caregiverId, patientId])
+  @@map("caregiver_links")
+}
+
+model DutyContext {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionId    String   @unique @map("session_id")
+  userId       String   @map("user_id") @db.Uuid
+  assignmentId String   @map("assignment_id") @db.Uuid
+  selectedAt   DateTime @default(now()) @map("selected_at")
+  expiresAt    DateTime @map("expires_at")
+  user         UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("duty_contexts")
+}
+
+model TotpCredential {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @unique @map("user_id") @db.Uuid
+  encryptedSecret String    @map("encrypted_secret")
+  enabledAt       DateTime? @map("enabled_at")
+  lastUsedStep    BigInt?   @map("last_used_step")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  rotatedAt       DateTime? @map("rotated_at")
+  user            UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("totp_credentials")
+}
+
+model EmergencySession {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  patientId   String   @map("patient_id") @db.Uuid
+  reasonCode  String   @map("reason_code")
+  reasonText  String?  @map("reason_text")
+  auditEventId String  @map("audit_event_id")
+  issuedAt    DateTime @default(now()) @map("issued_at")
+  expiresAt   DateTime @map("expires_at")
+  endedAt     DateTime? @map("ended_at")
+  user        UserProfile @relation(fields: [userId], references: [id])
+  patient     Patient @relation(fields: [patientId], references: [id])
+
+  @@index([userId, patientId, expiresAt])
+  @@map("emergency_sessions")
+}
+
+model ConsentGrant {
+  id             String      @id @default(uuid()) @db.Uuid
+  patientId      String      @map("patient_id") @db.Uuid
+  createdById    String      @map("created_by_id") @db.Uuid
+  scope          String      @default("emergency-summary")
+  status         GrantStatus @default(ACTIVE)
+  tokenId        String      @unique @map("token_id")
+  expiresAt      DateTime    @map("expires_at")
+  revokedAt      DateTime?   @map("revoked_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  patient        Patient     @relation(fields: [patientId], references: [id])
+  createdBy      UserProfile @relation("GrantCreator", fields: [createdById], references: [id])
+
+  @@index([patientId, status, expiresAt])
+  @@map("consent_grants")
+}
+
+model FacilitySigningKey {
+  id                String   @id @default(uuid()) @db.Uuid
+  facilityId        String   @map("facility_id") @db.Uuid
+  keyId             String   @unique @map("key_id")
+  publicKey         String   @map("public_key")
+  encryptedPrivateKey String @map("encrypted_private_key")
+  activeFrom        DateTime @map("active_from")
+  retiredAt         DateTime? @map("retired_at")
+  facility          Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@index([facilityId, activeFrom])
+  @@map("facility_signing_keys")
+}
+
+model RegisteredDevice {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  name          String
+  signingPublicKey String    @map("signing_public_key")
+  encryptionPublicKey String @map("encryption_public_key")
+  status        DeviceStatus @default(PENDING)
+  lastSequence  BigInt       @default(0) @map("last_sequence")
+  registeredAt  DateTime     @default(now()) @map("registered_at")
+  revokedAt     DateTime?    @map("revoked_at")
+  user          UserProfile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cacheManifests CacheManifest[]
+  offlineEvents OfflineEvent[]
+
+  @@map("registered_devices")
+}
+
+model CacheManifest {
+  id              String   @id @default(uuid()) @db.Uuid
+  deviceId        String   @map("device_id") @db.Uuid
+  assignmentId    String   @map("assignment_id") @db.Uuid
+  encryptedPayload String  @map("encrypted_payload")
+  payloadHash     String   @map("payload_hash")
+  scopePatientIds Json     @map("scope_patient_ids")
+  issuedAt        DateTime @default(now()) @map("issued_at")
+  expiresAt       DateTime @map("expires_at")
+  device          RegisteredDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, expiresAt])
+  @@map("cache_manifests")
+}
+
+model OfflineEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  deviceId       String   @map("device_id") @db.Uuid
+  idempotencyKey String   @unique @map("idempotency_key")
+  sequence       BigInt
+  occurredAt     DateTime @map("occurred_at")
+  payload        Json
+  signature      String
+  syncedAt       DateTime @default(now()) @map("synced_at")
+  auditEventId   String?  @map("audit_event_id")
+  device         RegisteredDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, sequence])
+  @@map("offline_events")
+}
+
+model OrderLink {
+  id             String   @id @default(uuid()) @db.Uuid
+  patientId      String   @map("patient_id") @db.Uuid
+  assigneeUserId String   @map("assignee_user_id") @db.Uuid
+  createdByUserId String  @map("created_by_user_id") @db.Uuid
+  resourceTypes  String[] @map("resource_types")
+  startsAt       DateTime @default(now()) @map("starts_at")
+  endsAt         DateTime @map("ends_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  assignee       UserProfile @relation("OrderAssignee", fields: [assigneeUserId], references: [id], onDelete: Cascade)
+  createdBy      UserProfile @relation("OrderCreator", fields: [createdByUserId], references: [id])
+
+  @@index([assigneeUserId, startsAt, endsAt])
+  @@index([patientId, startsAt, endsAt])
+  @@map("order_links")
+}
+
+model Notification {
+  id          String    @id @default(uuid()) @db.Uuid
+  recipientId String    @map("recipient_id") @db.Uuid
+  patientId   String?   @map("patient_id") @db.Uuid
+  type        String
+  title       String
+  metadata    Json
+  createdAt   DateTime  @default(now()) @map("created_at")
+  readAt      DateTime? @map("read_at")
+  recipient   UserProfile @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  patient     Patient?  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt, createdAt])
+  @@map("notifications")
+}

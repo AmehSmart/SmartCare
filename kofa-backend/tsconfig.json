@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/contracts" },
+    { "path": "./packages/passport-browser" },
+    { "path": "./packages/core" },
+    { "path": "./apps/audit-service" },
+    { "path": "./apps/api" },
+    { "path": "./scripts" }
+  ]
+}
