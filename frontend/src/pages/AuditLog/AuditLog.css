@@ -93,7 +93,7 @@
 }
 
 /* ============================================================
-   Card — wraps table + optional detail panel
+   Card - wraps table + optional detail panel
    ============================================================ */
 
 .al-card {
@@ -101,7 +101,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   display: flex;
-  /* overflow: hidden removed — let content breathe; panel scrolls independently */
+  /* overflow: hidden removed - let content breathe; panel scrolls independently */
 }
 
 .al-card__main {
@@ -475,7 +475,7 @@
 }
 
 /* ============================================================
-   Responsive — Tablet (sidebar collapses at 768px)
+   Responsive - Tablet (sidebar collapses at 768px)
    ============================================================ */
 
 @media (max-width: 768px) {
@@ -513,7 +513,7 @@
 }
 
 /* ============================================================
-   Responsive — Small phone
+   Responsive - Small phone
    ============================================================ */
 
 @media (max-width: 600px) {
@@ -541,7 +541,7 @@
 }
 
 /* ============================================================
-   Responsive — Very small phone
+   Responsive - Very small phone
    ============================================================ */
 
 @media (max-width: 480px) {

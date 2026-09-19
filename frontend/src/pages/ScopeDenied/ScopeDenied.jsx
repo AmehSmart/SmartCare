@@ -20,7 +20,7 @@ export default function ScopeDenied() {
                     <Icon name="alert" />
                     <span>
                         <strong>Out of scope.</strong> This patient is assigned to Ward B.
-                        You are currently on duty in Ward A — Day Shift.
+                        You are currently on duty in Ward A - Day Shift.
                         Your active role does not include cross-ward access.
                     </span>
                 </div>

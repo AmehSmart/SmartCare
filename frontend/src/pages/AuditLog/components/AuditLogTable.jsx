@@ -48,10 +48,10 @@ export default function AuditLogTable({ events, onSelect, selectedId }) {
                                 )}
                             </td>
                             <td>
-                                {e.target !== "—" ? (
+                                {e.target !== "-" ? (
                                     <span className="al-table__target">{e.target}</span>
                                 ) : (
-                                    <span className="al-table__dash">—</span>
+                                    <span className="al-table__dash">-</span>
                                 )}
                             </td>
                             <td className="al-table__role">{e.role}</td>

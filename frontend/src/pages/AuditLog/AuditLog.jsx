@@ -43,13 +43,13 @@ const EVENTS = [
     {
         id: 6, date: "12/09/2026", time: "19:30", actor: "Nurse", actorFullName: "Nurse Emeka Nwosu",
         actorId: "N8002", role: "NURSE", action: "Login", field: null,
-        target: "—", ip: "192.168.1.50", eventId: "EVT325",
+        target: "-", ip: "192.168.1.50", eventId: "EVT325",
         hash: "df6287369f46297f92c287f92c28729", prevHash: "ce5176258e35186e81b176e81b17618", chainOk: true,
     },
     {
         id: 7, date: "08/09/2026", time: "09:01", actor: "Chioma", actorFullName: "Chioma Eze",
         actorId: "RC003", role: "RECORDS_CLERK", action: "Login", field: null,
-        target: "—", ip: "192.168.114.19", eventId: "EVT198",
+        target: "-", ip: "192.168.114.19", eventId: "EVT198",
         hash: "e07398470a57308a03d398a03d39830", prevHash: "df6287369f46297f92c287f92c28729", chainOk: true,
         flagged: true, flagNote: "Concurrent session from 192.168.114.19",
     },
@@ -68,7 +68,7 @@ const EVENTS = [
     {
         id: 10, date: "08/09/2026", time: "08:42", actor: "Dr.", actorFullName: "Dr. Adaeze Okonkwo",
         actorId: "DR001", role: "ATTENDING_DOCTOR", action: "Login", field: null,
-        target: "—", ip: "192.168.1.12", eventId: "EVT201",
+        target: "-", ip: "192.168.1.12", eventId: "EVT201",
         hash: "13a6cb703d8a6b3d360a6b3d360a6cb7", prevHash: "0295ba692c795a2c25f5ba2c25f5ba69", chainOk: true,
     },
 ];
@@ -90,7 +90,7 @@ export default function AuditLog() {
                 event.actorFullName,
                 event.role,
                 event.action,
-                event.field ?? "—",
+                event.field ?? "-",
                 event.target,
                 event.eventId,
                 event.ip,

@@ -562,7 +562,7 @@
 .pr-access-log__user {
   color: var(--color-text);
   font-weight: 600;
-  /* Was min-width: 150px — caused horizontal overflow on small screens */
+  /* Was min-width: 150px - caused horizontal overflow on small screens */
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -586,7 +586,7 @@
 .pr-access-log__flag svg { width: 14px; height: 14px; }
 
 /* ============================================================
-   Responsive — Tablet (sidebar collapses)
+   Responsive - Tablet (sidebar collapses)
    ============================================================ */
 
 @media (max-width: 768px) {
@@ -608,7 +608,7 @@
 }
 
 /* ============================================================
-   Responsive — Small phone
+   Responsive - Small phone
    ============================================================ */
 
 @media (max-width: 600px) {
@@ -649,7 +649,7 @@
 }
 
 /* ============================================================
-   Responsive — Very small phone (320–375px)
+   Responsive - Very small phone (320–375px)
    ============================================================ */
 
 @media (max-width: 390px) {

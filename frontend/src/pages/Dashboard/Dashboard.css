@@ -449,14 +449,14 @@
    Responsive
    ============================================================ */
 
-/* Tablet large — collapse right rail into main column grid */
+/* Tablet large - collapse right rail into main column grid */
 @media (max-width: 1200px) {
   .dash {
     grid-template-columns: 220px minmax(0, 1fr) 280px;
   }
 }
 
-/* Tablet — drop right rail to full-width row */
+/* Tablet - drop right rail to full-width row */
 @media (max-width: 960px) {
   .dash {
     grid-template-columns: 220px minmax(0, 1fr);
@@ -476,7 +476,7 @@
   }
 }
 
-/* Mobile — full width, sidebar goes to drawer */
+/* Mobile - full width, sidebar goes to drawer */
 @media (max-width: 768px) {
   .dash {
     grid-template-columns: 1fr;

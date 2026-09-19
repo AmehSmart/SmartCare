@@ -30,7 +30,7 @@ function CheckCell({ allowed }) {
             </span>
         );
     }
-    return <span className="sr-dash" aria-label="Not permitted">—</span>;
+    return <span className="sr-dash" aria-label="Not permitted">-</span>;
 }
 
 function RoleForm({ mode = "create", initialValues, onSubmit, onCancel, saving = false, error = "" }) {

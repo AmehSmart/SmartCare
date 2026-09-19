@@ -44,7 +44,7 @@ export default function EventDetailPanel({ event, onClose, onPrev, onNext }) {
                         <dt>Event ID</dt>
                         <dd>{event.eventId}</dd>
                     </div>
-                    {event.target !== "—" && (
+                    {event.target !== "-" && (
                         <div>
                             <dt>Patient</dt>
                             <dd>{event.target}</dd>

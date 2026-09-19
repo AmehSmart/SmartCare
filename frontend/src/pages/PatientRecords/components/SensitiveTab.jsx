@@ -70,7 +70,7 @@ export default function SensitiveTab({ patient }) {
         <div className="pr-panel-body">
             <div className="pr-restricted-banner">
                 <Icon name="alert" />
-                Restricted — Access to these fields is role-controlled and permanently logged
+                Restricted - Access to these fields is role-controlled and permanently logged
             </div>
 
             {SENSITIVE_ITEMS.map((item) => {
