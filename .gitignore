@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Session handoff notes (not project source)
+/memory.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
