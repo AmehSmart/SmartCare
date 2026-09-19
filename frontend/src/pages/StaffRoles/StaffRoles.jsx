@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import { NAV_ITEMS, CURRENT_USER } from "../../components/layout/navConfig";
 import { getPermissionGroups, getRoles, getStaffMembers, createRole, updateRole, deleteRole, assignRoleToStaff } from "../../services/api/roleService";
 import Avatar from "../../components/ui/Avatar";
+import { isBackendEnabled } from "../../services/api/config";
 
 const FIELDS = [
     { label: "Demographics", doctor: true, nurse: true, records: true, intern: true, it: false },
@@ -221,6 +222,11 @@ export default function StaffRoles() {
                 <div className="sr-page-title">
                     <h1>Staff &amp; Roles</h1>
                     <p>Manage access levels, emergency access codes, and session activity</p>
+                    {isBackendEnabled() && (
+                        <p role="note" style={{ marginTop: 8, padding: "10px 12px", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", background: "var(--color-warning-light)", color: "var(--color-warning)", fontSize: 13, fontWeight: 700 }}>
+                            This role and permission matrix is a local policy view. Live staff, role, and assignment changes are managed by the backend admin endpoints and are not editable here yet. See Roster Management for the live roster.
+                        </p>
+                    )}
                 </div>
 
                 <div className="sr-content">

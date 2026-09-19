@@ -14,7 +14,35 @@ import { buildTotpUri, createTotpEnrollment, disableTotpEnrollment, getTotpEnrol
 import { getAuditQueue, verifyAuditChain } from "../services/api/auditApi";
 import { verifyEmergencyAccess, endEmergencyAccess } from "../services/api/emergencyApi";
 import { getRoster } from "../services/api/adminApi";
+import { getMyPatients, createGrant, listGrants, revokeGrant, redeemToken, getAccessHistory } from "../services/api/passportApi";
 import { isBackendEnabled } from "../services/api/config";
+
+const EXPIRY_OPTIONS = [
+  { label: "1 hour", seconds: 3600 },
+  { label: "12 hours", seconds: 43200 },
+  { label: "24 hours", seconds: 86400 },
+];
+
+function formatWhen(value) {
+  if (!value) return "-";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function useMyPatient() {
+  const [patient, setPatient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let mounted = true;
+    getMyPatients()
+      .then((list) => { if (mounted) setPatient(list[0] || null); })
+      .catch((err) => { if (mounted) setError(err.message || "Unable to load your record."); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+  return { patient, loading, error };
+}
 
 const PATIENT = { name: "Fatima Abdullahi", id: "PT-000184", ward: "Ward B", genotype: "HbSS" };
 
@@ -127,13 +155,159 @@ export function EmergencySummary() {
 }
 function Info({ title, value, danger }) { return <article className={`extra-info${danger ? " extra-info--danger" : ""}`}><h2>{title}</h2><p>{value}</p><Pill tone={danger ? "red" : "green"}>{danger ? "Critical" : "Hospital-verified"}</Pill></article>; }
 
-export function Passport() { return <Shell title="My emergency passport" subtitle="Your critical health information, ready when care cannot wait." patient><section className="extra-card extra-card--passport"><Pill tone="green">✓ Works offline · verified by signature</Pill><h2>{PATIENT.name}</h2><p>{PATIENT.id} · Emergency summary is ready to share.</p><Link className="extra-primary-link" to="/passport/qr">Show emergency QR card</Link><div className="extra-stat"><strong>2</strong><span>active emergency shares</span></div><h3>Recent access</h3><p className="extra-muted">Dr. Adaeze Okonkwo viewed your emergency summary today at 08:44.</p></section></Shell> }
+export function Passport() {
+  const { patient, loading, error } = useMyPatient();
+  const [count, setCount] = useState(null);
+  useEffect(() => {
+    if (!patient) return;
+    listGrants(patient.patientId).then((g) => setCount(g.filter((x) => x.status === "ACTIVE").length)).catch(() => setCount(null));
+  }, [patient]);
 
-export function PassportQR() { return <Shell title="Emergency QR card" subtitle="This signed code expires automatically." patient><section className="extra-card extra-card--narrow extra-center"><div className="extra-qr" aria-label="Emergency QR code"><Icon name="qr-code" /></div><h2>{PATIENT.name}</h2><label>Expires in<select defaultValue="1 hour"><option>1 hour</option><option>12 hours</option><option>24 hours</option></select></label><label className="extra-check"><input type="checkbox" /> Require a PIN before opening</label><Button variant="danger">Revoke grant</Button></section></Shell> }
+  return <Shell title="My emergency passport" subtitle="Your critical health information, ready when care cannot wait." patient>
+    <section className="extra-card extra-card--passport">
+      {loading && <p className="extra-muted">Loading your record...</p>}
+      {!loading && error && <p className="extra-form-error">{error}</p>}
+      {!loading && !error && patient && <>
+        <Pill tone="green">Verified by signature</Pill>
+        <h2>{patient.name}</h2>
+        <p>Emergency summary is ready to share.</p>
+        <Link className="extra-primary-link" to="/passport/qr">Create emergency QR card</Link>
+        <div className="extra-stat"><strong>{count ?? "-"}</strong><span>active emergency shares</span></div>
+        <h3>Manage sharing</h3>
+        <p className="extra-muted"><Link to="/passport/consent">View and revoke active grants and access history</Link></p>
+      </>}
+      {!loading && !error && !patient && <p className="extra-muted">No patient record is linked to this account.</p>}
+    </section>
+  </Shell>;
+}
 
-export function Scan() { const [state, setState] = useState("idle"); return <div className="extra-scan"><Link to="/dashboard">← Back to portal</Link><div className="extra-camera"><Icon name="camera" /><div className="extra-scan-frame" /></div><h1>Scan emergency QR</h1><p>Position the QR code inside the frame, or enter a token manually.</p>{state === "verified" && <div className="extra-verified" role="status">✓ Signature verified - safe to open summary</div>}<input placeholder="Paste token" aria-label="Manual emergency token" /><Button onClick={() => setState("verified")}>Verify token</Button></div> }
+export function PassportQR() {
+  const { patient, loading, error } = useMyPatient();
+  const [expiry, setExpiry] = useState(EXPIRY_OPTIONS[0].seconds);
+  const [pin, setPin] = useState("");
+  const [grant, setGrant] = useState(null);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState("");
 
-export function PassportConsent() { return <Shell title="Sharing & consent" subtitle="Review and control access to your emergency summary." patient><section className="extra-card"><h2>Active grants</h2><div className="extra-list"><div><strong>Emergency QR grant</strong><span>Expires in 56 minutes</span><button>Revoke</button></div><div><strong>Caregiver access</strong><span>Added 12 Sep 2026</span><button>Revoke</button></div></div><h2>Access history</h2><p className="extra-muted">Dr. Adaeze Okonkwo · Passport scan · 08 Sep 2026, 08:44</p></section></Shell> }
+  const generate = async () => {
+    if (pin.length < 6) { setFormError("Set a PIN of at least 6 digits to protect the share."); return; }
+    setBusy(true); setFormError("");
+    try {
+      const result = await createGrant({ patientId: patient.patientId, pin, expiresInSeconds: expiry });
+      setGrant(result);
+      const url = await QRCode.toDataURL(result.token, { width: 220, margin: 2, errorCorrectionLevel: "M" });
+      setQrDataUrl(url);
+    } catch (err) {
+      setFormError(err.message || "Unable to create the emergency QR.");
+    } finally { setBusy(false); }
+  };
+
+  const revoke = async () => {
+    if (!grant) return;
+    try { await revokeGrant(grant.grantId); } finally { setGrant(null); setQrDataUrl(""); setPin(""); }
+  };
+
+  return <Shell title="Emergency QR card" subtitle="This signed code expires automatically." patient>
+    <section className="extra-card extra-card--narrow extra-center">
+      {loading && <p className="extra-muted">Loading your record...</p>}
+      {!loading && error && <p className="extra-form-error">{error}</p>}
+      {!loading && !error && patient && <>
+        {grant ? <>
+          <div className="extra-qr extra-qr--real">{qrDataUrl ? <img src={qrDataUrl} alt="Emergency passport QR code" /> : <span>Preparing QR...</span>}</div>
+          <h2>{patient.name}</h2>
+          <p className="extra-muted">Share expires {formatWhen(grant.expiresAt)}. The clinician must enter your PIN to open it.</p>
+          <Button variant="danger" onClick={revoke}>Revoke grant</Button>
+        </> : <>
+          <div className="extra-qr" aria-hidden="true"><Icon name="qr-code" /></div>
+          <h2>{patient.name}</h2>
+          <label>Expires in
+            <select value={expiry} onChange={(e) => setExpiry(Number(e.target.value))}>
+              {EXPIRY_OPTIONS.map((o) => <option key={o.seconds} value={o.seconds}>{o.label}</option>)}
+            </select>
+          </label>
+          <label>Access PIN (6+ digits)
+            <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 12))} inputMode="numeric" placeholder="Set a PIN" />
+          </label>
+          {formError && <p className="extra-form-error" role="alert">{formError}</p>}
+          <Button onClick={generate} disabled={busy}>{busy ? "Generating..." : "Generate QR"}</Button>
+        </>}
+      </>}
+    </section>
+  </Shell>;
+}
+
+export function Scan() {
+  const [token, setToken] = useState("");
+  const [pin, setPin] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+
+  const verify = async () => {
+    setBusy(true); setError(""); setResult(null);
+    try {
+      const data = await redeemToken({ token: token.trim(), pin });
+      setResult(data);
+    } catch (err) {
+      setError(err.message || "This emergency token could not be verified.");
+    } finally { setBusy(false); }
+  };
+
+  const summary = result?.summary;
+  return <div className="extra-scan">
+    <Link to="/dashboard">Back to portal</Link>
+    <div className="extra-camera"><Icon name="camera" /><div className="extra-scan-frame" /></div>
+    <h1>Scan emergency QR</h1>
+    <p>Paste the token from the patient's QR card and enter their access PIN.</p>
+    <input placeholder="Paste token" aria-label="Emergency token" value={token} onChange={(e) => setToken(e.target.value)} />
+    <input placeholder="Access PIN" aria-label="Access PIN" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 12))} />
+    {error && <div className="extra-verified" style={{ background: "var(--color-danger-light)", color: "var(--color-danger)" }} role="alert">{error}</div>}
+    {summary && <div className="extra-verified" role="status">Signature verified - {summary.patient?.displayName || "patient"}. Allergies: {(summary.allergiesReactions || []).join(", ") || "none recorded"}.</div>}
+    <Button onClick={verify} disabled={busy || token.length < 1 || pin.length < 6}>{busy ? "Verifying..." : "Verify token"}</Button>
+  </div>;
+}
+
+export function PassportConsent() {
+  const { patient, loading, error } = useMyPatient();
+  const [grants, setGrants] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [dataError, setDataError] = useState("");
+
+  const reload = (patientId) => {
+    listGrants(patientId).then(setGrants).catch(() => setDataError("Unable to load grants."));
+    getAccessHistory(patientId).then(setHistory).catch(() => { /* access log may be restricted */ });
+  };
+
+  useEffect(() => { if (patient) reload(patient.patientId); }, [patient]);
+
+  const handleRevoke = async (id) => {
+    await revokeGrant(id);
+    if (patient) reload(patient.patientId);
+  };
+
+  return <Shell title="Sharing and consent" subtitle="Review and control access to your emergency summary." patient>
+    <section className="extra-card">
+      {loading && <p className="extra-muted">Loading...</p>}
+      {!loading && error && <p className="extra-form-error">{error}</p>}
+      {!loading && !error && patient && <>
+        <h2>Active grants</h2>
+        {dataError && <p className="extra-form-error">{dataError}</p>}
+        <div className="extra-list">
+          {grants.filter((g) => g.status === "ACTIVE").length === 0 && <div><span>No active grants.</span></div>}
+          {grants.filter((g) => g.status === "ACTIVE").map((g) => <div key={g.id}>
+            <strong>{g.scope || "Emergency summary"} grant</strong>
+            <span>Expires {formatWhen(g.expiresAt)}</span>
+            <button type="button" onClick={() => handleRevoke(g.id)}>Revoke</button>
+          </div>)}
+        </div>
+        <h2>Access history</h2>
+        {history.length === 0 && <p className="extra-muted">No recorded access yet.</p>}
+        {history.map((h, i) => <p key={i} className="extra-muted">{h.actor || h.actorRole} · {h.action} · {formatWhen(h.occurredAt)}</p>)}
+      </>}
+    </section>
+  </Shell>;
+}
 
 export function AuditQueue() {
   const [rows, setRows] = useState([]);

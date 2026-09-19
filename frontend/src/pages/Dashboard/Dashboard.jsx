@@ -18,10 +18,7 @@ import Button from "../../components/ui/Button";
 import Pill from "../../components/ui/Pill";
 import Avatar from "../../components/ui/Avatar";
 import { getPatientAssignments, getUserPermissions, hasPermission } from "../../services/api/roleService";
-
-const STAFF_STATS = [
-    { label: "Active Patients", value: 10, note: "under your care", icon: "users", tint: "blue" },
-];
+import { isBackendEnabled } from "../../services/api/config";
 
 const RECENT_ACTIVITY = [
     { tag: "Login", tagType: "blue", name: null, time: "just now" },
@@ -62,12 +59,18 @@ export default function Dashboard() {
             patientsRequiringAssignment,
         };
     }, [allPatients]);
-    const stats = isAdmin ? [
-        { label: "Total Patients", value: patientMetrics.totalPatients, note: "registered cases", icon: "users", tint: "blue" },
+    const backendMode = isBackendEnabled();
+    const staffStats = [
+        { label: "Active Patients", value: activePatients.length, note: "in your scope", icon: "users", tint: "blue" },
+    ];
+    const adminStats = [
+        { label: "Total Patients", value: patientMetrics.totalPatients, note: "visible to you", icon: "users", tint: "blue" },
         { label: "Active Patients", value: patientMetrics.activePatientsCount, note: "currently active", icon: "heart", tint: "green" },
         { label: "Discharged Patients", value: patientMetrics.dischargedPatientsCount, note: "completed cases", icon: "check", tint: "gray" },
-        { label: "Patients Requiring Assignment", value: patientMetrics.patientsRequiringAssignment, note: "awaiting assignment", icon: "file", tint: "amber" },
-    ] : STAFF_STATS;
+        // Assignment metric relies on local assignment data; only meaningful in mock mode.
+        ...(backendMode ? [] : [{ label: "Patients Requiring Assignment", value: patientMetrics.patientsRequiringAssignment, note: "awaiting assignment", icon: "file", tint: "amber" }]),
+    ];
+    const stats = isAdmin ? adminStats : staffStats;
     const permissions = getUserPermissions(doctor);
 
     const today = new Date().toLocaleDateString("en-GB", {
@@ -153,7 +156,7 @@ export default function Dashboard() {
             </div>
 
             <aside className="dash-rail">
-                {isAdmin && <RecentActivity activity={RECENT_ACTIVITY} />}
+                {isAdmin && !backendMode && <RecentActivity activity={RECENT_ACTIVITY} />}
                 <PermissionsPanel permissions={permissions} />
             </aside>
 

@@ -340,6 +340,62 @@ export async function markNotificationRead(id) {
   return { read: true };
 }
 
+// --- passport (SicklePass) ------------------------------------------------
+
+// A patient's own record is the single item /v1/patients returns for them
+// (a caregiver gets their dependents). This gives us the patientId the passport
+// grant endpoints require.
+export async function getMyPatient() {
+  const data = await apiFetch("/v1/patients?limit=5");
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map((item) => ({ patientId: item.id, name: item.displayName, fhirId: item.fhirId }));
+}
+
+export async function createPassportGrant({ patientId, pin, expiresInSeconds }) {
+  return apiFetch("/v1/passport/grants", {
+    method: "POST",
+    body: { patientId, pin, expiresInSeconds },
+  }); // { grantId, token, expiresAt, key }
+}
+
+export async function listPassportGrants(patientId) {
+  const data = await apiFetch(`/v1/passport/grants?patientId=${encodeURIComponent(patientId)}`);
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map((g) => ({
+    id: g.id,
+    scope: g.scope,
+    status: g.status,
+    expiresAt: g.expiresAt,
+    revokedAt: g.revokedAt,
+  }));
+}
+
+export async function revokePassportGrant(id) {
+  await apiFetch(`/v1/passport/grants/${id}`, { method: "DELETE" });
+  return { revoked: true };
+}
+
+export async function usePassport({ token, pin }) {
+  return apiFetch("/v1/passport/use", {
+    method: "POST",
+    idempotencyKey: newIdempotencyKey("passport"),
+    body: { token, pin },
+  }); // { summary, verification }
+}
+
+export async function getAccessLog(patientId) {
+  const data = await apiFetch(`/v1/patients/${patientId}/access-log`);
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map((e) => ({
+    occurredAt: e.occurredAt,
+    actor: e.actor,
+    actorRole: e.actorRole,
+    action: e.action,
+    decision: e.decision,
+    purposeOfUse: e.purposeOfUse,
+  }));
+}
+
 // --- admin roster ---------------------------------------------------------
 
 // Reads the administrative roster (users, assignments, wards) with no clinical
