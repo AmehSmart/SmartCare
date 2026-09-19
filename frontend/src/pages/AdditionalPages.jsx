@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import "./AdditionalPages.css";
 import Sidebar from "../components/layout/Sidebar";
 import Icon from "../components/ui/Icon";
@@ -11,28 +11,119 @@ import { getRoles, getStaffMembers, updateStaffAssignment } from "../services/ap
 import { useAuth } from "../context/useAuth";
 import QRCode from "qrcode";
 import { buildTotpUri, createTotpEnrollment, disableTotpEnrollment, getTotpEnrollment, verifyTotpEnrollment } from "../services/api/totpApi";
+import { getAuditQueue, verifyAuditChain } from "../services/api/auditApi";
+import { verifyEmergencyAccess, endEmergencyAccess } from "../services/api/emergencyApi";
+import { getRoster } from "../services/api/adminApi";
+import { isBackendEnabled } from "../services/api/config";
 
 const PATIENT = { name: "Fatima Abdullahi", id: "PT-000184", ward: "Ward B", genotype: "HbSS" };
-const auditRows = [
-  ["Ward mismatch", "Nurse Emeka Nwosu", "Fatima Abdullahi", "19:36", "High"],
-  ["Off-shift access", "Chioma Eze", "Patient record", "09:01", "Medium"],
-  ["Repeat break-glass", "Dr. Adaeze Okonkwo", "Fatima Abdullahi", "08:44", "High"],
-];
+
+const REASON_CODES = {
+  "Unconscious patient": "UNCONSCIOUS_PATIENT",
+  "Severe vaso-occlusive crisis": "SEVERE_CRISIS",
+  "Immediate life-saving care": "LIFE_SAVING_CARE",
+};
+
+const severityTone = (level) => (String(level).toLowerCase() === "high" ? "red" : String(level).toLowerCase() === "low" ? "gray" : "warning");
 
 function Shell({ title, children, subtitle, patient = false }) {
   return <div className="extra-shell"><Sidebar navItems={NAV_ITEMS} user={CURRENT_USER} /><main className="extra-main"><header className="extra-header"><div><p className="extra-eyebrow">{patient ? "Patient passport" : "SmartCare access control"}</p><h1>{title}</h1>{subtitle && <p className="extra-subtitle">{subtitle}</p>}</div></header>{children}</main></div>;
 }
 
 export function BreakGlass() {
-  const navigate = useNavigate(); const [reason, setReason] = useState("Unconscious patient"); const [code, setCode] = useState("");
-  return <Shell title="Emergency access" subtitle="A temporary, fully audited override for an out-of-scope record."><section className="extra-card extra-card--narrow" role="dialog" aria-modal="true" aria-labelledby="breakglass-title"><div className="extra-emergency-icon"><Icon name="alert" /></div><h2 id="breakglass-title">Request break-glass access</h2><p>Access to {PATIENT.name} is outside your assigned Ward B scope. State the emergency reason and verify your code.</p><label>Emergency reason<select value={reason} onChange={(e) => setReason(e.target.value)}><option>Unconscious patient</option><option>Severe vaso-occlusive crisis</option><option>Immediate life-saving care</option></select></label><label>6-digit TOTP code<input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" placeholder="000000" /></label><Button variant="glass" disabled={code.length !== 6} onClick={() => navigate("/patients/PT-000184/emergency-summary")}>Grant emergency access</Button><Link to="/patients/PT-000184/denied">Cancel</Link></section></Shell>;
+  const navigate = useNavigate();
+  const { patientId } = useParams();
+  const targetId = patientId || PATIENT.id;
+  const [reason, setReason] = useState("Unconscious patient");
+  const [code, setCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleGrant = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      const result = await verifyEmergencyAccess({
+        grantId: targetId,
+        code,
+        reasonCode: REASON_CODES[reason] || "UNCONSCIOUS_PATIENT",
+        reasonText: reason,
+      });
+      navigate(`/patients/${targetId}/emergency-summary`, {
+        state: {
+          summary: result.summary,
+          expiresAt: result.expiresAt,
+          sessionId: result.emergencySessionId || result.grantId,
+          reason,
+        },
+      });
+    } catch (err) {
+      setError(err.message || "Emergency access could not be granted.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return <Shell title="Emergency access" subtitle="A temporary, fully audited override for an out-of-scope record."><section className="extra-card extra-card--narrow" role="dialog" aria-modal="true" aria-labelledby="breakglass-title"><div className="extra-emergency-icon"><Icon name="alert" /></div><h2 id="breakglass-title">Request break-glass access</h2><p>Access to this record is outside your assigned scope. State the emergency reason and verify your authenticator code.</p><label>Emergency reason<select value={reason} onChange={(e) => setReason(e.target.value)}>{Object.keys(REASON_CODES).map((r) => <option key={r}>{r}</option>)}</select></label><label>6-digit TOTP code<input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" placeholder="000000" /></label>{error && <p className="extra-form-error" role="alert">{error}</p>}<Button variant="breakglass" disabled={code.length !== 6 || submitting} onClick={handleGrant}>{submitting ? "Verifying..." : "Grant emergency access"}</Button><Link to={`/patients/${targetId}/denied`}>Cancel</Link></section></Shell>;
 }
 
 export function EmergencySummary() {
-  const [seconds, setSeconds] = useState(899);
-  useEffect(() => { const id = setInterval(() => setSeconds((v) => Math.max(0, v - 1)), 1000); return () => clearInterval(id); }, []);
+  const navigate = useNavigate();
+  const { patientId } = useParams();
+  const { user } = useAuth();
+  const location = useLocation();
+  const state = location.state || {};
+  const summary = state.summary || null;
+
+  const [seconds, setSeconds] = useState(() => (state.expiresAt
+    ? Math.max(0, Math.round((new Date(state.expiresAt).getTime() - Date.now()) / 1000))
+    : 899));
+  const [ended, setEnded] = useState(false);
+
+  useEffect(() => {
+    if (ended) return undefined;
+    const id = setInterval(() => setSeconds((v) => Math.max(0, v - 1)), 1000);
+    return () => clearInterval(id);
+  }, [ended]);
+
   const time = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
-  return <Shell title="Emergency summary" subtitle="Minimum necessary clinical information"><div className="extra-countdown" role="alert" aria-live="polite"><Icon name="alert" /> Emergency access active for Nurse Emeka Nwosu · {time} remaining <button>End access now</button></div><section className="extra-grid"><Info title="Confirmed genotype" value="HbSS (sickle cell disease)" /><Info title="Allergies" value="Penicillin - anaphylaxis" danger /><Info title="Current medications" value="Hydroxyurea 500mg · analgesia plan" /><Info title="Key complications" value="Prior acute chest syndrome" /><Info title="Transfusion history" value="Last transfusion: 14 Jun 2026" /><Info title="Home facility" value="Lagos University Teaching Hospital" /></section></Shell>;
+  const actorName = user?.name || "the clinician";
+
+  const handleEnd = async () => {
+    try {
+      await endEmergencyAccess({ grantId: state.sessionId, actorId: user?.id });
+    } finally {
+      setEnded(true);
+      navigate(patientId ? `/patients/${patientId}` : "/dashboard");
+    }
+  };
+
+  const list = (arr) => (Array.isArray(arr) && arr.length ? arr.join(" · ") : "None recorded");
+  const home = summary?.homeFacility?.value || summary?.homeFacility || (summary ? "Not recorded" : "Lagos University Teaching Hospital");
+
+  return <Shell title="Emergency summary" subtitle="Minimum necessary clinical information">
+    <div className="extra-countdown" role="alert" aria-live="polite">
+      <Icon name="alert" /> Emergency access active for {actorName} · {time} remaining
+      <button type="button" onClick={handleEnd}>End access now</button>
+    </div>
+    <section className="extra-grid">
+      {summary ? <>
+        <Info title="Allergies and reactions" value={list(summary.allergiesReactions)} danger={Boolean(summary.allergiesReactions?.length)} />
+        <Info title="Current medications" value={list(summary.currentMedications)} />
+        <Info title="Transfusion history" value={list(summary.transfusionHistory)} />
+        <Info title="Key complications" value={list(summary.keyComplications)} />
+        <Info title="Home facility" value={home} />
+        <Info title="Patient" value={summary.patient?.displayName || "-"} />
+      </> : <>
+        <Info title="Confirmed genotype" value="HbSS (sickle cell disease)" />
+        <Info title="Allergies" value="Penicillin - anaphylaxis" danger />
+        <Info title="Current medications" value="Hydroxyurea 500mg · analgesia plan" />
+        <Info title="Key complications" value="Prior acute chest syndrome" />
+        <Info title="Transfusion history" value="Last transfusion: 14 Jun 2026" />
+        <Info title="Home facility" value="Lagos University Teaching Hospital" />
+      </>}
+    </section>
+  </Shell>;
 }
 function Info({ title, value, danger }) { return <article className={`extra-info${danger ? " extra-info--danger" : ""}`}><h2>{title}</h2><p>{value}</p><Pill tone={danger ? "red" : "green"}>{danger ? "Critical" : "Hospital-verified"}</Pill></article>; }
 
@@ -44,17 +135,96 @@ export function Scan() { const [state, setState] = useState("idle"); return <div
 
 export function PassportConsent() { return <Shell title="Sharing & consent" subtitle="Review and control access to your emergency summary." patient><section className="extra-card"><h2>Active grants</h2><div className="extra-list"><div><strong>Emergency QR grant</strong><span>Expires in 56 minutes</span><button>Revoke</button></div><div><strong>Caregiver access</strong><span>Added 12 Sep 2026</span><button>Revoke</button></div></div><h2>Access history</h2><p className="extra-muted">Dr. Adaeze Okonkwo · Passport scan · 08 Sep 2026, 08:44</p></section></Shell> }
 
-export function AuditQueue() { return <Shell title="Audit officer queue" subtitle="Flagged events ranked by severity."><section className="extra-card"><div className="extra-actions"><h2>Open anomalies</h2><Link className="extra-outline-link" to="/audit/verify">Run integrity check</Link></div><div className="extra-table-wrap"><table className="extra-table"><thead><tr><th>Flag</th><th>Actor</th><th>Target</th><th>Time</th><th>Severity</th></tr></thead><tbody>{auditRows.map((row) => <tr key={row[0]}>{row.map((cell, i) => <td key={cell}>{i === 4 ? <Pill tone={cell === "High" ? "red" : "warning"}>{cell}</Pill> : cell}</td>)}</tr>)}</tbody></table></div></section></Shell> }
+export function AuditQueue() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-export function AuditVerify() { return <Shell title="Audit integrity verification" subtitle="Cryptographic verification of the append-only audit chain."><section className="extra-integrity" role="status"><Icon name="check" /><div><h2>Chain intact - 20 entries verified</h2><p>Every event hashes to its predecessor. Last verified 12 Sep 2026, 19:36.</p></div></section><section className="extra-card"><h2>Verification details</h2><p className="extra-muted mono">SHA-256 · head: 7a1f32e14a91d4d4... · remote checkpoint matches</p></section></Shell> }
+  useEffect(() => {
+    let mounted = true;
+    getAuditQueue()
+      .then((data) => { if (mounted) setRows(data); })
+      .catch((err) => { if (mounted) setError(err.message || "Unable to load the anomaly queue."); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  return <Shell title="Audit officer queue" subtitle="Flagged events ranked by severity.">
+    <section className="extra-card">
+      <div className="extra-actions"><h2>Open anomalies</h2><Link className="extra-outline-link" to="/audit/verify">Run integrity check</Link></div>
+      <div className="extra-table-wrap">
+        <table className="extra-table">
+          <thead><tr><th>Flag</th><th>Actor</th><th>Target</th><th>Time</th><th>Severity</th></tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan={5}>Loading anomalies...</td></tr>}
+            {!loading && error && <tr><td colSpan={5} className="extra-form-error">{error}</td></tr>}
+            {!loading && !error && rows.length === 0 && <tr><td colSpan={5}>No open anomalies.</td></tr>}
+            {!loading && !error && rows.map((row, i) => <tr key={row.id || i}>
+              <td>{row.flag}</td><td>{row.actor}</td><td>{row.target}</td><td>{row.time}</td>
+              <td><Pill tone={severityTone(row.severity)}>{row.severity}</Pill></td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </Shell>;
+}
+
+export function AuditVerify() {
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const run = () => {
+    setLoading(true);
+    setError("");
+    verifyAuditChain()
+      .then(setResult)
+      .catch((err) => setError(err.message || "Unable to verify the audit chain."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { run(); }, []);
+
+  const ok = result?.integrityValid;
+  return <Shell title="Audit integrity verification" subtitle="Cryptographic verification of the append-only audit chain.">
+    <section className={`extra-integrity${ok === false ? " extra-info--danger" : ""}`} role="status">
+      <Icon name={ok === false ? "alert" : "check"} />
+      <div>
+        {loading && <h2>Verifying chain...</h2>}
+        {!loading && error && <h2>{error}</h2>}
+        {!loading && !error && result && <>
+          <h2>{ok ? `Chain intact - ${result.verifiedEvents} entries verified` : "Chain integrity check failed"}</h2>
+          <p>{ok ? "Every event hashes to its predecessor." : "One or more entries did not match the expected hash."} Last verified {new Date(result.lastVerifiedAt).toLocaleString("en-GB")}.</p>
+        </>}
+      </div>
+    </section>
+    <section className="extra-card">
+      <div className="extra-actions"><h2>Verification details</h2><Button variant="secondary" onClick={run} disabled={loading}>{loading ? "Running..." : "Re-run check"}</Button></div>
+      <p className="extra-muted mono">SHA-256 · checkpoint: {result?.checkpoint || "-"}</p>
+    </section>
+  </Shell>;
+}
 
 export function AdminRoster() {
-  const [staff, setStaff] = useState(() => getStaffMembers());
+  const backendMode = isBackendEnabled();
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [roles] = useState(() => getRoles());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStaffId, setEditingStaffId] = useState("");
   const [form, setForm] = useState({ staffId: "", role: "", ward: "", shift: "" });
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    getRoster()
+      .then((data) => { if (mounted) setStaff(data); })
+      .catch((err) => { if (mounted) setLoadError(err.message || "Unable to load the roster."); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
 
   const openAssignment = (member = null) => {
     setError("");
@@ -94,18 +264,24 @@ export function AdminRoster() {
     <section className="extra-card">
       <div className="extra-actions">
         <h2>Staff assignments</h2>
-        <Button onClick={() => openAssignment()}><Icon name="plus" /> Add assignment</Button>
+        {!backendMode && <Button onClick={() => openAssignment()}><Icon name="plus" /> Add assignment</Button>}
       </div>
+      {backendMode && <p className="extra-muted">Live roster from the server. Assignment editing is managed in the backend and is read-only here.</p>}
       <div className="extra-table-wrap">
         <table className="extra-table">
-          <thead><tr><th>Staff member</th><th>Role</th><th>Ward</th><th>Shift</th><th>Actions</th></tr></thead>
-          <tbody>{staff.map((member) => <tr key={member.staffId}>
-            <td>{member.name}</td>
-            <td>{member.role}</td>
-            <td>{member.ward}</td>
-            <td>{member.shift}</td>
-            <td><button type="button" onClick={() => openAssignment(member)}>Edit</button></td>
-          </tr>)}</tbody>
+          <thead><tr><th>Staff member</th><th>Role</th><th>Ward</th><th>Shift</th>{!backendMode && <th>Actions</th>}</tr></thead>
+          <tbody>
+            {loading && <tr><td colSpan={backendMode ? 4 : 5}>Loading roster...</td></tr>}
+            {!loading && loadError && <tr><td colSpan={backendMode ? 4 : 5} className="extra-form-error">{loadError}</td></tr>}
+            {!loading && !loadError && staff.length === 0 && <tr><td colSpan={backendMode ? 4 : 5}>No staff on the roster.</td></tr>}
+            {!loading && !loadError && staff.map((member) => <tr key={member.staffId}>
+              <td>{member.name}</td>
+              <td>{member.role}</td>
+              <td>{member.ward}</td>
+              <td>{member.shift}</td>
+              {!backendMode && <td><button type="button" onClick={() => openAssignment(member)}>Edit</button></td>}
+            </tr>)}
+          </tbody>
         </table>
       </div>
     </section>

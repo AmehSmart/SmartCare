@@ -339,3 +339,27 @@ export async function markNotificationRead(id) {
   await apiFetch(`/v1/notifications/${id}/read`, { method: "PATCH" });
   return { read: true };
 }
+
+// --- admin roster ---------------------------------------------------------
+
+// Reads the administrative roster (users, assignments, wards) with no clinical
+// data. Returns a flat staff list shaped like the roster table expects.
+export async function getAdminRoster() {
+  const data = await apiFetch("/v1/admin/roster");
+  const users = Array.isArray(data?.users) ? data.users : [];
+  const wards = Array.isArray(data?.wards) ? data.wards : [];
+  const wardName = (id) => wards.find((w) => w.id === id)?.name || "";
+  const assignments = Array.isArray(data?.assignments) ? data.assignments : [];
+
+  return users.map((user) => {
+    const active = assignments.find((a) => a.userId === user.id && a.active !== false);
+    return {
+      staffId: user.id,
+      name: user.displayName || user.email || user.id,
+      email: user.email || "",
+      role: active?.role ? roleLabel(active.role) : "Unassigned",
+      ward: active?.wardId ? wardName(active.wardId) : "-",
+      shift: "-",
+    };
+  });
+}
