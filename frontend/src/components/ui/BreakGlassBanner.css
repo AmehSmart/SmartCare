@@ -12,7 +12,7 @@
   gap: var(--sp-4);
   font-size: var(--text-small);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(138,31,122,0.35);
+  box-shadow:none;
 }
 
 .bg-banner__icon {

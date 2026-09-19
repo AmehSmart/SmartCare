@@ -82,11 +82,14 @@
   --radius-xl:  20px;
   --radius-full: 9999px;
 
-  /* --- Shadows --- */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:  0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-lg:  0 10px 28px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
-  --shadow-xl:  0 20px 48px rgba(0,0,0,0.16), 0 8px 16px rgba(0,0,0,0.08);
+  /* --- Elevation --- */
+  /* Flat, professional medical UI: no drop shadows. Depth comes from borders
+     and surface/canvas contrast. Tokens kept as 'none' so any existing
+     references resolve to a flat result. */
+  --shadow-sm:  none;
+  --shadow-md:  none;
+  --shadow-lg:  none;
+  --shadow-xl:  none;
 
   /* --- Transitions --- */
   --transition: 0.15s ease;
@@ -156,18 +159,13 @@ code, pre, .mono {
    ============================================================ */
 
 @keyframes skeleton-pulse {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { opacity: 1; }
+  50%  { opacity: 0.55; }
+  100% { opacity: 1; }
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-gray-100) 25%,
-    var(--color-gray-200) 50%,
-    var(--color-gray-100) 75%
-  );
-  background-size: 200% 100%;
+  background: var(--color-gray-200);
   animation: skeleton-pulse 1.5s ease-in-out infinite;
   border-radius: var(--radius-sm);
 }

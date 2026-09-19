@@ -14,7 +14,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--color-action), var(--color-success));
+  background: var(--color-action);
 }
 
 .registration-card {
@@ -23,7 +23,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  box-shadow:none;
   padding: 30px;
 }
 
@@ -327,7 +327,7 @@
 
 .registration-choice:hover {
   border-color: var(--color-action);
-  box-shadow: var(--shadow-sm);
+  box-shadow:none;
   transform: translateY(-1px);
 }
 
@@ -337,7 +337,7 @@
 }
 
 .registration-choice--admin {
-  background: linear-gradient(180deg, rgba(15, 118, 110, 0.03), rgba(12, 84, 102, 0.02));
+  background: var(--color-gray-50);
 }
 
 .registration-choice__badge {

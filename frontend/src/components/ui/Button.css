@@ -55,7 +55,7 @@
   font-weight: 800;
   letter-spacing: 0.01em;
 }
-.btn--breakglass:hover { background: var(--color-glass-hover); box-shadow: 0 0 0 3px rgba(138,31,122,0.25); }
+.btn--breakglass:hover { background: var(--color-glass-hover); box-shadow:none; }
 
 /* --- Ghost --- */
 .btn--ghost {

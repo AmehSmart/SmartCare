@@ -9,7 +9,7 @@
 .login-panel {
   flex: 0 0 42%;
   max-width: 620px;
-  background: linear-gradient(160deg, #1b8fe0 0%, #0f6fc0 55%, #0a5aa3 100%);
+  background: var(--color-action);
   color: #fff;
   padding: 48px 56px;
   display: flex;
@@ -229,7 +229,7 @@
 }
 .field-input:focus {
   border-color: #38a3e8;
-  box-shadow: 0 0 0 3px rgba(56, 163, 232, 0.15);
+  box-shadow:none;
   background: #fff;
 }
 .field-input::placeholder {

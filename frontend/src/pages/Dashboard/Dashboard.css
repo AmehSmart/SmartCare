@@ -99,7 +99,7 @@
   cursor: pointer;
   transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
-.stat-card:hover { border-color: var(--color-action); box-shadow: var(--shadow-sm); }
+.stat-card:hover { border-color: var(--color-action); box-shadow:none; }
 .stat-card:active { transform: translateY(1px); }
 .stat-card:focus-visible { outline: 3px solid rgba(27,143,224,.28); outline-offset: 2px; }
 

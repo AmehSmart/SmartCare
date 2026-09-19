@@ -16,7 +16,7 @@
 
 .sr-topstrip {
   height: 4px;
-  background: linear-gradient(90deg, var(--color-action), var(--color-success));
+  background: var(--color-action);
 }
 
 .sr-page-title {
