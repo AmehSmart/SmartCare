@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitOverride": true,
+    "useUnknownInCatchVariables": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "declaration": true,
+    "sourceMap": true,
+    "composite": true,
+    "paths": {
+      "@kofa/contracts": ["./packages/contracts/src/index.ts"],
+      "@kofa/core": ["./packages/core/src/index.ts"],
+      "@kofa/passport-browser": ["./packages/passport-browser/src/index.ts"]
+    },
+    "outDir": "dist"
+  }
+}

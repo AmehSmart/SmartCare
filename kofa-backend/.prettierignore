@@ -1,0 +1,7 @@
+Kofa_Unified_Product_and_PRD.md
+pnpm-lock.yaml
+generated/
+dist/
+coverage/
+prisma/**/migrations/**/*.sql
+infrastructure/keycloak/*.json

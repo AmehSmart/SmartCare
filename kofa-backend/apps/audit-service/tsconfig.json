@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "references": [{ "path": "../../packages/contracts" }, { "path": "../../packages/core" }],
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../../dist/apps/audit-service",
+    "tsBuildInfoFile": "../../dist/apps/audit-service.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"]
+}

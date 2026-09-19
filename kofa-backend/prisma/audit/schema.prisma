@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/audit"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AUDIT_DATABASE_URL")
+  directUrl = env("AUDIT_MIGRATION_DATABASE_URL")
+}
+
+enum AuditDecision {
+  GRANT
+  DENY
+  EMERGENCY
+  ERROR
+}
+
+enum FlagStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+  ESCALATED
+}
+
+enum FlagSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model AuditEvent {
+  id             String        @id @default(uuid()) @db.Uuid
+  sequence       BigInt        @unique @default(autoincrement())
+  occurredAt     DateTime      @map("occurred_at")
+  recordedAt     DateTime      @default(now()) @map("recorded_at")
+  actorId        String        @map("actor_id")
+  actorRole      String        @map("actor_role")
+  facilityId     String?       @map("facility_id")
+  patientRef     String?       @map("patient_ref")
+  action         String
+  resourceType   String?       @map("resource_type")
+  decision       AuditDecision
+  purposeOfUse   String        @map("purpose_of_use")
+  reasonCode     String?       @map("reason_code")
+  reasonText     String?       @map("reason_text")
+  context        Json
+  idempotencyKey String        @unique @map("idempotency_key")
+  previousHash   String        @map("previous_hash")
+  hash           String
+  flags          AbuseFlag[]
+
+  @@index([actorId, occurredAt])
+  @@index([patientRef, occurredAt])
+  @@index([facilityId, occurredAt])
+  @@map("audit_events")
+}
+
+model AbuseFlag {
+  id          String       @id @default(uuid()) @db.Uuid
+  auditEventId String      @map("audit_event_id") @db.Uuid
+  ruleCode    String       @map("rule_code")
+  severity    FlagSeverity
+  status      FlagStatus   @default(OPEN)
+  evidence    Json
+  createdAt   DateTime     @default(now()) @map("created_at")
+  reviewedAt  DateTime?    @map("reviewed_at")
+  reviewedBy  String?      @map("reviewed_by")
+  disposition String?
+  event       AuditEvent   @relation(fields: [auditEventId], references: [id], onDelete: Cascade)
+
+  @@unique([auditEventId, ruleCode])
+  @@index([status, severity, createdAt])
+  @@map("abuse_flags")
+}
+
+model ChainCheckpoint {
+  id         String   @id @default(uuid()) @db.Uuid
+  sequence   BigInt   @unique
+  hash       String
+  eventCount BigInt   @map("event_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  signature  String?
+
+  @@map("chain_checkpoints")
+}
+
+model VerificationRun {
+  id             String   @id @default(uuid()) @db.Uuid
+  startedAt      DateTime @default(now()) @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  valid          Boolean?
+  checkedCount   BigInt   @default(0) @map("checked_count")
+  firstBrokenSeq BigInt?  @map("first_broken_seq")
+  expectedHash   String?  @map("expected_hash")
+  actualHash     String?  @map("actual_hash")
+  requestedBy    String   @map("requested_by")
+
+  @@map("verification_runs")
+}
+
+model ChainState {
+  id           Int      @id
+  lastSequence BigInt   @default(0) @map("last_sequence")
+  lastHash     String   @map("last_hash")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("chain_state")
+}
