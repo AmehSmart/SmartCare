@@ -95,16 +95,51 @@ export function BreakGlass() {
   return <Shell title="Emergency access" subtitle="Immediate, accountable access when a patient cannot wait."><section className="extra-card extra-card--narrow" role="dialog" aria-modal="true" aria-labelledby="breakglass-title"><div className="extra-emergency-icon"><Icon name="alert" /></div><h2 id="breakglass-title">Break the glass</h2><p>This record is outside your assigned scope. Emergency care is never blocked - choose the reason and confirm it is you. The record opens straight away.</p><label>Why do you need access now?<select value={reason} onChange={(e) => setReason(e.target.value)}>{Object.keys(REASON_CODES).map((r) => <option key={r}>{r}</option>)}</select></label><label>Confirm it is you<input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" placeholder="6-digit authenticator code" autoFocus /></label><p className="extra-muted" style={{ fontSize: 12 }}>Enter the 6-digit code from your authenticator app (not the secret). Demo: in Google Authenticator choose <strong>Enter a setup key</strong> and add key <strong>JBSWY3DPEHPK3PXP</strong> (do not scan the TOTP Setup page - that is a separate demo). Access is recorded before the record opens - it cannot be undone or hidden.</p>{error && <p className="extra-form-error" role="alert">{error}</p>}<Button variant="breakglass" disabled={code.length !== 6 || submitting} onClick={handleGrant}>{submitting ? "Opening..." : "Open record now"}</Button><Link to={`/patients/${targetId}/denied`}>Cancel</Link></section></Shell>;
 }
 
+const EMERGENCY_STORAGE_KEY = "smartcare-emergency-session";
+
+function loadEmergencySession(patientId) {
+  try {
+    const raw = sessionStorage.getItem(EMERGENCY_STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (saved.patientId !== patientId) return null;
+    if (saved.expiresAt && new Date(saved.expiresAt).getTime() <= Date.now()) {
+      sessionStorage.removeItem(EMERGENCY_STORAGE_KEY);
+      return null;
+    }
+    return saved;
+  } catch {
+    return null;
+  }
+}
+
 export function EmergencySummary() {
   const navigate = useNavigate();
   const { patientId } = useParams();
   const { user } = useAuth();
   const location = useLocation();
-  const state = location.state || {};
-  const summary = state.summary || null;
 
-  const [seconds, setSeconds] = useState(() => (state.expiresAt
-    ? Math.max(0, Math.round((new Date(state.expiresAt).getTime() - Date.now()) / 1000))
+  // Keep the active session across reloads: prefer the state passed from the
+  // break-glass screen, else restore the saved session (until it expires).
+  const [session] = useState(() => {
+    const fromNav = location.state?.summary ? location.state : null;
+    if (fromNav) {
+      try {
+        sessionStorage.setItem(EMERGENCY_STORAGE_KEY, JSON.stringify({
+          summary: fromNav.summary,
+          expiresAt: fromNav.expiresAt,
+          sessionId: fromNav.sessionId,
+          patientId,
+        }));
+      } catch { /* storage unavailable */ }
+      return fromNav;
+    }
+    return loadEmergencySession(patientId);
+  });
+  const summary = session?.summary || null;
+
+  const [seconds, setSeconds] = useState(() => (session?.expiresAt
+    ? Math.max(0, Math.round((new Date(session.expiresAt).getTime() - Date.now()) / 1000))
     : 899));
   const [ended, setEnded] = useState(false);
 
@@ -119,15 +154,18 @@ export function EmergencySummary() {
 
   const handleEnd = async () => {
     try {
-      await endEmergencyAccess({ grantId: state.sessionId, actorId: user?.id });
+      await endEmergencyAccess({ grantId: session?.sessionId, actorId: user?.id });
     } finally {
+      try { sessionStorage.removeItem(EMERGENCY_STORAGE_KEY); } catch { /* ignore */ }
       setEnded(true);
-      navigate(patientId ? `/patients/${patientId}` : "/dashboard");
+      navigate("/dashboard");
     }
   };
 
-  const list = (arr) => (Array.isArray(arr) && arr.length ? arr.join(" · ") : "None recorded");
-  const home = summary?.homeFacility?.value || summary?.homeFacility || (summary ? "Not recorded" : "Lagos University Teaching Hospital");
+  const list = (arr) => (Array.isArray(arr) && arr.length
+    ? arr.map((x) => (typeof x === "string" ? x : x.value ?? x.display ?? "")).filter(Boolean).join(" · ")
+    : "None recorded");
+  const home = summary?.homeFacility?.value || (typeof summary?.homeFacility === "string" ? summary.homeFacility : "") || (summary ? "Not recorded" : "Lagos University Teaching Hospital");
 
   return <Shell title="Emergency summary" subtitle="Minimum necessary clinical information">
     <div className="extra-countdown" role="alert" aria-live="polite">

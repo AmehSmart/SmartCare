@@ -110,16 +110,50 @@ export class ClinicalService {
   ): Promise<unknown> {
     const actor = await this.context.actor(principal);
     const role = this.actorRole(actor);
-    const decision = await this.policy.decide(actor, patientId, 'READ_CHART');
+    let decision = await this.policy.decide(actor, patientId, 'READ_CHART');
+
+    // If normal scope denies but the clinician holds an active break-glass session
+    // for this patient, grant the full clinical chart until the session expires.
+    // Every such read is still logged (as an emergency-scoped access).
+    let viaEmergency = false;
+    if (!decision.allowed && (role === 'DOCTOR' || role === 'NURSE')) {
+      const active = await this.database.emergencySession.findFirst({
+        where: {
+          userId: actor.userId,
+          patientId,
+          endedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { id: true },
+      });
+      if (active) {
+        viaEmergency = true;
+        decision = {
+          allowed: true,
+          reason: 'ALLOWED',
+          fields: [
+            'demographics',
+            'conditions',
+            'deepClinicalHistory',
+            'medications',
+            'labs',
+            'sensitiveFlags',
+          ],
+          sensitiveRevealRequired: false,
+        } as typeof decision;
+      }
+    }
+
     await this.audit.append(
       this.auditInput(
         actor,
         role,
-        'READ_CHART',
+        viaEmergency ? 'READ_CHART_EMERGENCY' : 'READ_CHART',
         decision.allowed ? 'GRANT' : 'DENY',
         patientId,
         {
           policyReason: decision.reason,
+          emergency: viaEmergency,
           wardMismatch: decision.reason === 'OUTSIDE_SCOPE' && role === 'NURSE',
           offShift: decision.reason === 'NO_ACTIVE_ASSIGNMENT',
         },
