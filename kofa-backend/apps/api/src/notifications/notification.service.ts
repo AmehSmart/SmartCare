@@ -48,6 +48,39 @@ export class NotificationService {
     }
   }
 
+  // Notify staff currently on duty in a ward - used when a patient is admitted
+  // or transferred there, so ward clinicians see the new arrival to review.
+  async notifyWardStaff(
+    wardId: string,
+    patientId: string,
+    type: string,
+    title: string,
+    metadata: Prisma.InputJsonObject,
+  ): Promise<void> {
+    const now = new Date();
+    const assignments = await this.database.assignment.findMany({
+      where: {
+        wardId,
+        active: true,
+        startsAt: { lte: now },
+        endsAt: { gt: now },
+      },
+      select: { userId: true },
+    });
+    const recipientIds = [...new Set(assignments.map((assignment) => assignment.userId))];
+    if (recipientIds.length) {
+      await this.database.notification.createMany({
+        data: recipientIds.map((recipientId) => ({
+          recipientId,
+          patientId,
+          type,
+          title,
+          metadata,
+        })),
+      });
+    }
+  }
+
   async list(principal: RequestPrincipal): Promise<unknown> {
     const actor = await this.context.actor(principal);
     return {

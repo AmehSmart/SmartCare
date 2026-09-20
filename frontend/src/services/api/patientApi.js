@@ -6,6 +6,7 @@ import {
   getPatientById as backendGetPatientById,
   requestSensitiveFieldReveal as backendRequestSensitiveFieldReveal,
   addClinicalNote as backendAddClinicalNote,
+  transferPatient as backendTransferPatient,
 } from "./backendAdapter";
 
 const normalizeRole = (value = "") => String(value || "").trim().toLowerCase();
@@ -164,6 +165,14 @@ export async function requestSensitiveFieldReveal({ patientId, field, reason, ac
       { label: "Mental health note", value: "Mild anxiety at booking; counselled, no pharmacotherapy.", source: "HOSPITAL_VERIFIED" },
     ],
   };
+}
+
+export async function transferPatient({ patientId, wardId }) {
+  if (isBackendEnabled()) {
+    return backendTransferPatient({ patientId, wardId });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return { transferred: true, wardId };
 }
 
 export async function addClinicalNote({ patientId, fhirId, text }) {

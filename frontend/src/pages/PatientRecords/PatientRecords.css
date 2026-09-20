@@ -682,3 +682,13 @@
 .pr-note-form { margin-top: 20px; border-top: 1px solid var(--color-border); padding-top: 16px; }
 .pr-note-saved { display: flex; align-items: center; gap: 6px; color: var(--color-success); font-size: 13px; font-weight: 700; margin: 0 0 10px; }
 .pr-note-saved svg { width: 15px; height: 15px; }
+
+/* Transfer / admit control */
+.pr-transfer { margin-top: 20px; border-top: 1px solid var(--color-border); padding-top: 16px; }
+.pr-transfer-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.pr-transfer-row select {
+  flex: 1; min-width: 220px; min-height: 44px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  padding: 10px 12px; font: inherit; background: var(--color-surface); color: var(--color-text);
+}
+.pr-transfer-row select:focus { outline: none; border-color: var(--color-action); }

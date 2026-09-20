@@ -15,6 +15,7 @@ import ClinicalTab from "./components/ClinicalTab";
 import AppointmentHistoryTab from "./components/AppointmentHistoryTab";
 import SensitiveTab from "./components/SensitiveTab";
 import AddNoteForm from "./components/AddNoteForm";
+import TransferControl from "./components/TransferControl";
 import RecentAccessLog from "./components/RecentAccessLog";
 import { useAuth } from "../../context/useAuth";
 
@@ -153,7 +154,12 @@ export default function PatientRecords() {
 
         switch (activeTab) {
             case "overview":
-                return <OverviewTab patient={patient} assignments={assignments} isAdmin={isAdmin} onAssign={openAssignmentModal} onRemove={handleRemoveAssignment} />;
+                return (
+                    <>
+                        <OverviewTab patient={patient} assignments={assignments} isAdmin={isAdmin} onAssign={openAssignmentModal} onRemove={handleRemoveAssignment} />
+                        <TransferControl patientId={patient.id} role={currentUser.role} />
+                    </>
+                );
             case "clinical":
                 return (
                     <>

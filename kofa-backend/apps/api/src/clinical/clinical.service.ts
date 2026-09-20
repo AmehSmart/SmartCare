@@ -6,6 +6,7 @@ import type { RequestPrincipal } from '../auth/auth.types.js';
 import { ContextService, type ActiveActor } from '../context/context.service.js';
 import { ClinicalDatabase } from '../database.service.js';
 import { PolicyService } from '../policy/policy.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import { buildEmergencySummary, projectResources } from './fhir.js';
 import { resourcePatientReference, SupportedFhirResourceSchema } from './fhir.js';
 import type { Prisma } from '../../../../generated/clinical/client.js';
@@ -17,7 +18,58 @@ export class ClinicalService {
     private readonly context: ContextService,
     private readonly policy: PolicyService,
     private readonly audit: AuditClient,
+    private readonly notifications: NotificationService,
   ) {}
+
+  // Admit or transfer a patient to a ward and notify the ward's on-duty staff.
+  async transferPatient(
+    principal: RequestPrincipal,
+    patientId: string,
+    wardId: string,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    const actor = await this.context.requireRole(principal, [
+      'DOCTOR',
+      'NURSE',
+      'RECORDS_CLERK',
+      'ADMIN',
+    ]);
+    const role = this.actorRole(actor);
+    const [patient, ward] = await Promise.all([
+      this.database.patient.findUniqueOrThrow({ where: { id: patientId } }),
+      this.database.ward.findUniqueOrThrow({ where: { id: wardId } }),
+    ]);
+    const sameFacility =
+      Boolean(actor.facilityId) &&
+      actor.facilityId === patient.facilityId &&
+      actor.facilityId === ward.facilityId;
+    await this.audit.append(
+      this.auditInput(
+        actor,
+        role,
+        'TRANSFER_PATIENT',
+        sameFacility ? 'GRANT' : 'DENY',
+        patientId,
+        { wardId, wardName: ward.name },
+        idempotencyKey,
+      ),
+    );
+    if (!sameFacility) {
+      throw new ForbiddenException('Patient or ward is outside your facility');
+    }
+    await this.database.patient.update({
+      where: { id: patientId },
+      data: { currentWardId: wardId },
+    });
+    await this.notifications.notifyWardStaff(
+      wardId,
+      patientId,
+      'PATIENT_TRANSFER',
+      `${patient.displayName} admitted to ${ward.name}`,
+      { ward: ward.name },
+    );
+    return { transferred: true, wardId, ward: ward.name };
+  }
 
   async search(principal: RequestPrincipal, query: string, limit: number): Promise<unknown> {
     const actor = await this.context.actor(principal);

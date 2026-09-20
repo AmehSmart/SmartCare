@@ -59,6 +59,19 @@ export class ClinicalController {
     return this.clinical.writeResource(principal, patientId, input.resource, idempotencyKey);
   }
 
+  @Post(':id/transfer')
+  transfer(
+    @Principal() principal: RequestPrincipal,
+    @Param('id', UuidValidationPipe) patientId: string,
+    @Headers('x-idempotency-key') idempotencyKey: string | undefined,
+    @Body() body: unknown,
+  ): Promise<unknown> {
+    if (!idempotencyKey || idempotencyKey.length < 16)
+      throw new BadRequestException('x-idempotency-key is required');
+    const input = z.object({ wardId: z.string().uuid() }).parse(body);
+    return this.clinical.transferPatient(principal, patientId, input.wardId, idempotencyKey);
+  }
+
   @Post(':id/sensitive-reveal')
   reveal(
     @Principal() principal: RequestPrincipal,

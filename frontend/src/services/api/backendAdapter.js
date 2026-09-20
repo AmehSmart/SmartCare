@@ -230,6 +230,16 @@ function formatSensitiveResource(resource) {
   return { label, value, source: resource?._kofa?.source || "HOSPITAL_VERIFIED" };
 }
 
+// Admit/transfer a patient to a ward. The backend notifies that ward's on-duty
+// staff so their Notifications light up with the new arrival.
+export async function transferPatient({ patientId, wardId }) {
+  return apiFetch(`/v1/patients/${patientId}/transfer`, {
+    method: "POST",
+    idempotencyKey: newIdempotencyKey("transfer"),
+    body: { wardId },
+  });
+}
+
 // Write a free-text clinical note as a FHIR Observation (writable by doctor and
 // nurse). The subject reference must match the patient's FHIR id.
 export async function addClinicalNote({ patientId, fhirId, text }) {
