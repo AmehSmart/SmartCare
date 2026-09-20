@@ -114,7 +114,8 @@ function mapPatientCard(item) {
     age: ageFrom(item.birthDate),
     gender: item.gender || "-",
     ward: item.currentWard?.name || "Unassigned",
-    status: "Active",
+    status: item.status || (item.active === false ? "Inactive" : "Active"),
+    department: item.department?.name || item.currentWard?.department?.name || "-",
     scope: "In scope",
     tone: "green",
   };
@@ -197,7 +198,11 @@ export async function getPatientById(id) {
     age: ageFrom(patient.birthDate),
     gender: extracted.demographics.gender || "-",
     ward: patient.currentWard?.name || "-",
-    status: "Active",
+    status: patient.status || (patient.active === false ? "Inactive" : "Active"),
+    department: patient.department?.name || "-",
+    admittedAt: patient.admittedAt || null,
+    dischargedAt: patient.dischargedAt || null,
+    assignments: patient.assignments || [],
     scope: "In scope",
     ...extracted,
   };
@@ -456,20 +461,26 @@ export async function getAccessLog(patientId) {
 // data. Returns a flat staff list shaped like the roster table expects.
 export async function getAdminRoster() {
   const data = await apiFetch("/v1/admin/roster");
-  const users = Array.isArray(data?.users) ? data.users : [];
-  const wards = Array.isArray(data?.wards) ? data.wards : [];
-  const wardName = (id) => wards.find((w) => w.id === id)?.name || "";
-  const assignments = Array.isArray(data?.assignments) ? data.assignments : [];
-
+  const users = Array.isArray(data?.items) ? data.items : [];
   return users.map((user) => {
-    const active = assignments.find((a) => a.userId === user.id && a.active !== false);
     return {
-      staffId: user.id,
-      name: user.displayName || user.email || user.id,
+      staffId: user.id, name: user.name || user.email || user.id,
       email: user.email || "",
-      role: active?.role ? roleLabel(active.role) : "Unassigned",
-      ward: active?.wardId ? wardName(active.wardId) : "-",
-      shift: "-",
+      role: user.role ? roleLabel(user.role) : "Unassigned",
+      ward: user.ward?.name || "-", department: user.department?.name || "-",
+      shift: user.shift?.name || "-", active: user.active,
+      assignedPatients: user.assignedPatients || [],
     };
   });
 }
+
+export async function getAdminPatients() {
+  const data = await apiFetch("/v1/admin/patients");
+  return (data?.items || []).map(mapPatientCard);
+}
+
+export async function getAdminPatient(id) { return apiFetch(`/v1/admin/patients/${id}`); }
+export async function getAssignmentStaff() { return apiFetch("/v1/admin/assignment-staff"); }
+export async function assignAdminPatient(patientId, userId) { return apiFetch(`/v1/admin/patients/${patientId}/assignments`, { method: "POST", body: { userId } }); }
+export async function removeAdminPatientAssignment(id) { return apiFetch(`/v1/admin/patient-assignments/${id}`, { method: "DELETE" }); }
+export async function setAdminPatientStatus(id, status) { return apiFetch(`/v1/admin/patients/${id}/status`, { method: "PATCH", body: { status } }); }

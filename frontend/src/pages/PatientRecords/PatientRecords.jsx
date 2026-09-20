@@ -8,6 +8,8 @@ import Modal from "../../components/ui/Modal";
 import { NAV_ITEMS, CURRENT_USER } from "../../components/layout/navConfig";
 import { getPatientById, getPatientFieldAccess } from "../../services/api/patientApi";
 import { assignPatientToStaff, getPatientAssignmentsForPatient, getStaffDirectory, removePatientAssignment, hasPermission } from "../../services/api/roleService";
+import { getAssignmentStaff, assignAdminPatient, removeAdminPatientAssignment, setAdminPatientStatus } from "../../services/api/adminApi";
+import { isBackendEnabled } from "../../services/api/config";
 import PatientHeader from "./components/PatientHeader";
 import PatientTabs from "./components/PatientTabs";
 import OverviewTab from "./components/OverviewTab";
@@ -60,6 +62,7 @@ export default function PatientRecords() {
     const [selectedStaffId, setSelectedStaffId] = useState("");
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState("");
+    const [availableStaff, setAvailableStaff] = useState([]);
 
     useEffect(() => {
         let mounted = true;
@@ -91,7 +94,11 @@ export default function PatientRecords() {
                         allergies: ["Latex (mild)"],
                         fieldAccess: getPatientFieldAccess(nextPatient, accessUser.role),
                     });
-                    setAssignments(getPatientAssignmentsForPatient(nextPatient.id));
+                    if (accessUser?.backendRole === "ADMIN" && isBackendEnabled()) {
+                        setAssignments((nextPatient.assignments || []).map((assignment) => ({ id: assignment.id, staffId: assignment.staff?.id, staffName: assignment.staff?.displayName, assignmentType: "Care team", ward: nextPatient.ward, status: assignment.endsAt && new Date(assignment.endsAt) <= new Date() ? "Removed" : "Active" })));
+                        const candidates = await getAssignmentStaff();
+                        if (mounted) setAvailableStaff((candidates.items || []).map((staff) => ({ staffId: staff.id, name: staff.displayName, role: staff.assignments?.[0]?.role || "Staff", ward: staff.assignments?.[0]?.ward?.name || "-", department: staff.assignments?.[0]?.department?.name || "-" })));
+                    } else setAssignments(getPatientAssignmentsForPatient(nextPatient.id));
                 }
             } catch (err) {
                 if (!mounted) return;
@@ -116,17 +123,18 @@ export default function PatientRecords() {
         return () => {
             mounted = false;
         };
-    }, [patientId, user]);
+    }, [patientId, user, navigate]);
 
-    const isAdmin = hasPermission(currentUser, "manage_assignments") || currentUser.role === "Administrator";
+    const isAdmin = currentUser.backendRole === "ADMIN" || hasPermission(currentUser, "manage_assignments") || currentUser.role === "Administrator";
 
     const eligibleStaff = useMemo(() => {
-        return getStaffDirectory().filter((member) => {
+        const source = currentUser.backendRole === "ADMIN" && isBackendEnabled() ? availableStaff : getStaffDirectory();
+        return source.filter((member) => {
             const roleName = String(member.role || "").toLowerCase();
             if (member.roleId === "administrator") return false;
             return roleName.includes("doctor") || roleName.includes("nurse") || roleName.includes("locum");
         });
-    }, []);
+    }, [availableStaff, currentUser.backendRole]);
 
     const filteredStaff = useMemo(() => {
         const normalized = assignmentSearch.trim().toLowerCase();
@@ -145,8 +153,15 @@ export default function PatientRecords() {
         setAssignmentModalOpen(true);
     };
 
-    const handleAssign = () => {
+    const handleAssign = async () => {
         if (!patient || !selectedStaffId) return;
+        if (currentUser.backendRole === "ADMIN" && isBackendEnabled()) {
+            await assignAdminPatient(patient.id, selectedStaffId);
+            const selected = eligibleStaff.find((staff) => staff.staffId === selectedStaffId);
+            setAssignments((items) => [...items, { id: `pending-${selectedStaffId}`, staffId: selectedStaffId, staffName: selected?.name, assignmentType: "Care team", ward: patient.tag, status: "Active" }]);
+            setAssignmentModalOpen(false);
+            return;
+        }
         assignPatientToStaff({
             patientId: patient.id,
             staffId: selectedStaffId,
@@ -158,12 +173,20 @@ export default function PatientRecords() {
         setAssignmentModalOpen(false);
     };
 
-    const handleRemoveAssignment = () => {
+    const handleRemoveAssignment = async () => {
         if (!currentAssignment) return;
         const confirmed = window.confirm("Remove this assignment from the patient care team?");
         if (!confirmed) return;
-        removePatientAssignment(currentAssignment.id);
-        setAssignments(getPatientAssignmentsForPatient(patient.id));
+        if (currentUser.backendRole === "ADMIN" && isBackendEnabled()) {
+            await removeAdminPatientAssignment(currentAssignment.id);
+            setAssignments((items) => items.map((item) => item.id === currentAssignment.id ? { ...item, status: "Removed" } : item));
+        } else { removePatientAssignment(currentAssignment.id); setAssignments(getPatientAssignmentsForPatient(patient.id)); }
+    };
+
+    const handleStatusChange = async (status) => {
+        if (!patient || currentUser.backendRole !== "ADMIN" || !isBackendEnabled()) return;
+        const updated = await setAdminPatientStatus(patient.id, status);
+        setPatient((current) => current ? { ...current, status: updated.status } : current);
     };
 
     const renderTab = () => {
@@ -296,6 +319,14 @@ export default function PatientRecords() {
 
                     <div className="pr-card">
                         <PatientHeader patient={patient} />
+                        {currentUser.backendRole === "ADMIN" && isBackendEnabled() && (
+                            <div className="pr-assignment-box" style={{ margin: "0 24px 16px" }}>
+                                <span className="pr-assignment-label">Administrative patient status</span>
+                                <select value={patient.status} onChange={(event) => handleStatusChange(event.target.value)} aria-label="Patient status">
+                                    <option value="ACTIVE">Active</option><option value="DISCHARGED">Discharged</option><option value="INACTIVE">Inactive</option>
+                                </select>
+                            </div>
+                        )}
                         <PatientTabs activeTab={activeTab} onChange={setActiveTab} allowedTabs={allowedTabs} />
                         {renderTab()}
                     </div>

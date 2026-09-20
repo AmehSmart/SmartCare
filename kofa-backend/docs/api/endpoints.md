@@ -295,7 +295,14 @@ Response: `{ "accepted": 1, "lastSequence": "1" }`.
 
 Admin only:
 
-- `GET /v1/admin/roster` returns users, assignments, wards, and devices without clinical data.
+- `GET /v1/admin/roster` returns `{ "items": [{ "id", "name", "email", "active", "role", "ward", "department", "shift", "assignedPatients" }] }`. `assignedPatients` contains active case-attachment history; no clinical resources are returned.
+- `GET /v1/admin/patients` returns the facility patient administration list, including lifecycle status, ward, department, and active care-team attachments.
+- `GET /v1/admin/patients/:id` returns a single administrative patient view (identity/status/location/assignments only; not clinical FHIR resources).
+- `GET /v1/admin/patients/:id/assignments` returns attachment history.
+- `POST /v1/admin/patients/:id/assignments` payload `{ "userId": "<uuid>", "startsAt": "<optional ISO date>", "endsAt": "<optional ISO date>" }` creates a case attachment for an active eligible clinician.
+- `DELETE /v1/admin/patient-assignments/:id` time-ends an attachment and returns `{ "removed": true }`.
+- `PATCH /v1/admin/patients/:id/status` payload `{ "status": "ACTIVE" | "DISCHARGED" | "INACTIVE" }` changes lifecycle status.
+- `GET /v1/admin/assignment-staff` lists active eligible doctors, locums, and nurses for the facility.
 - `POST /v1/admin/assignments` payload: `{ "userId": "<uuid>", "role": "NURSE", "wardId": "<uuid>", "startsAt": "2026-09-18T08:00:00Z", "endsAt": "2026-09-18T20:00:00Z" }`.
 - `DELETE /v1/admin/assignments/:id` → `{ "disabled": true }`.
 - `POST /v1/admin/users/:id/totp-enrollment` returns an enrollment secret and `otpauth` URI.

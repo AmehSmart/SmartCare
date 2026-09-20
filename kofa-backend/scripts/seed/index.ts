@@ -9,6 +9,11 @@ const ids = {
   wardA: '41000000-0000-4000-8000-000000000001',
   wardB: '41000000-0000-4000-8000-000000000002',
   ed: '41000000-0000-4000-8000-000000000003',
+  cardiology: '42000000-0000-4000-8000-000000000001',
+  emergency: '42000000-0000-4000-8000-000000000002',
+  medicine: '42000000-0000-4000-8000-000000000003',
+  dayShift: '43000000-0000-4000-8000-000000000001',
+  nightShift: '43000000-0000-4000-8000-000000000002',
   doctor: '20000000-0000-4000-8000-000000000001',
   nurse: '20000000-0000-4000-8000-000000000002',
   clerk: '20000000-0000-4000-8000-000000000003',
@@ -16,9 +21,17 @@ const ids = {
   admin: '20000000-0000-4000-8000-000000000005',
   patientUser: '20000000-0000-4000-8000-000000000006',
   lab: '20000000-0000-4000-8000-000000000007',
+  doctor2: '20000000-0000-4000-8000-000000000008',
+  doctor3: '20000000-0000-4000-8000-000000000009',
+  nurse2: '20000000-0000-4000-8000-000000000010',
   amina: '30000000-0000-4000-8000-000000000001',
   chidi: '30000000-0000-4000-8000-000000000002',
   fatima: '30000000-0000-4000-8000-000000000003',
+  ibrahim: '30000000-0000-4000-8000-000000000004',
+  grace: '30000000-0000-4000-8000-000000000005',
+  tunde: '30000000-0000-4000-8000-000000000006',
+  zara: '30000000-0000-4000-8000-000000000007',
+  kunle: '30000000-0000-4000-8000-000000000008',
 } as const;
 
 async function main(): Promise<void> {
@@ -33,10 +46,19 @@ async function main(): Promise<void> {
     },
     update: {},
   });
+  for (const department of [
+    { id: ids.cardiology, name: 'Cardiology', code: 'CARD' },
+    { id: ids.emergency, name: 'Emergency Medicine', code: 'EMERG' },
+    { id: ids.medicine, name: 'General Medicine', code: 'GENMED' },
+  ]) await database.department.upsert({ where: { id: department.id }, create: { ...department, facilityId: ids.facility }, update: department });
+  for (const shift of [
+    { id: ids.dayShift, name: 'Day Shift', code: 'DAY', startsAt: '08:00', endsAt: '20:00' },
+    { id: ids.nightShift, name: 'Night Shift', code: 'NIGHT', startsAt: '20:00', endsAt: '08:00' },
+  ]) await database.shift.upsert({ where: { id: shift.id }, create: { ...shift, facilityId: ids.facility }, update: shift });
   for (const ward of [
-    { id: ids.wardA, name: 'Medical Ward A', code: 'WARD-A' },
-    { id: ids.wardB, name: 'Medical Ward B', code: 'WARD-B' },
-    { id: ids.ed, name: 'Emergency Department', code: 'ED' },
+    { id: ids.wardA, name: 'Cardiology Ward', code: 'WARD-A', departmentId: ids.cardiology },
+    { id: ids.wardB, name: 'General Medicine Ward', code: 'WARD-B', departmentId: ids.medicine },
+    { id: ids.ed, name: 'Emergency Department', code: 'ED', departmentId: ids.emergency },
   ]) {
     await database.ward.upsert({
       where: { id: ward.id },
@@ -52,6 +74,7 @@ async function main(): Promise<void> {
       displayName: 'Amina Musa',
       birthDate: new Date('2001-04-12'),
       currentWardId: ids.wardB,
+      departmentId: ids.medicine,
     },
     {
       id: ids.chidi,
@@ -59,6 +82,7 @@ async function main(): Promise<void> {
       displayName: 'Chidi Okafor',
       birthDate: new Date('1987-02-03'),
       currentWardId: ids.wardA,
+      departmentId: ids.cardiology,
     },
     {
       id: ids.fatima,
@@ -66,7 +90,13 @@ async function main(): Promise<void> {
       displayName: 'Fatima Bello',
       birthDate: new Date('1994-11-21'),
       currentWardId: ids.wardA,
+      departmentId: ids.cardiology,
     },
+    { id: ids.ibrahim, fhirId: 'patient-ibrahim-danladi', displayName: 'Ibrahim Danladi', birthDate: new Date('1972-08-15'), currentWardId: ids.ed, departmentId: ids.emergency },
+    { id: ids.grace, fhirId: 'patient-grace-okon', displayName: 'Grace Okon', birthDate: new Date('1982-01-23'), currentWardId: ids.ed, departmentId: ids.emergency },
+    { id: ids.tunde, fhirId: 'patient-tunde-ade', displayName: 'Tunde Ade', birthDate: new Date('1991-06-09'), currentWardId: ids.wardB, departmentId: ids.medicine },
+    { id: ids.zara, fhirId: 'patient-zara-yakubu', displayName: 'Zara Yakubu', birthDate: new Date('2000-12-01'), currentWardId: ids.wardA, departmentId: ids.cardiology, status: 'DISCHARGED' as const, active: false, dischargedAt: new Date('2026-08-20') },
+    { id: ids.kunle, fhirId: 'patient-kunle-oladele', displayName: 'Kunle Oladele', birthDate: new Date('1965-03-28'), currentWardId: ids.wardB, departmentId: ids.medicine, status: 'INACTIVE' as const, active: false },
   ];
   for (const patient of patients) {
     await database.patient.upsert({
@@ -81,19 +111,19 @@ async function main(): Promise<void> {
       id: ids.doctor,
       authSubject: '10000000-0000-4000-8000-000000000001',
       displayName: 'Dr Aisha Bello',
-      email: 'aisha@example.test',
+      email: 'doctor1@smartcare.test',
     },
     {
       id: ids.nurse,
       authSubject: '10000000-0000-4000-8000-000000000002',
       displayName: 'Maryam Yusuf',
-      email: 'maryam@example.test',
+      email: 'nurse1@smartcare.test',
     },
     {
       id: ids.clerk,
       authSubject: '10000000-0000-4000-8000-000000000003',
       displayName: 'Musa Ibrahim',
-      email: 'musa@example.test',
+      email: 'records1@smartcare.test',
     },
     {
       id: ids.audit,
@@ -105,7 +135,7 @@ async function main(): Promise<void> {
       id: ids.admin,
       authSubject: '10000000-0000-4000-8000-000000000005',
       displayName: 'Hauwa Lawal',
-      email: 'hauwa@example.test',
+      email: 'admin@smartcare.test',
     },
     {
       id: ids.patientUser,
@@ -118,8 +148,11 @@ async function main(): Promise<void> {
       id: ids.lab,
       authSubject: '10000000-0000-4000-8000-000000000007',
       displayName: 'Ifeanyi Eze',
-      email: 'ifeanyi@example.test',
+      email: 'lab1@smartcare.test',
     },
+    { id: ids.doctor2, authSubject: '10000000-0000-4000-8000-000000000008', displayName: 'Dr Chukwu Okeke', email: 'doctor2@smartcare.test' },
+    { id: ids.doctor3, authSubject: '10000000-0000-4000-8000-000000000009', displayName: 'Dr Sade Adebayo', email: 'doctor3@smartcare.test' },
+    { id: ids.nurse2, authSubject: '10000000-0000-4000-8000-000000000010', displayName: 'Nurse Halima Sani', email: 'nurse2@smartcare.test' },
   ];
   for (const user of users) {
     await database.userProfile.upsert({
@@ -136,20 +169,24 @@ async function main(): Promise<void> {
 
   const startsAt = new Date('2020-01-01T00:00:00Z');
   const endsAt = new Date('2035-01-01T00:00:00Z');
-  const assignments: Array<{ id: string; userId: string; role: Role; wardId?: string }> = [
+  const assignments: Array<{ id: string; userId: string; role: Role; wardId?: string; departmentId?: string; shiftId?: string }> = [
     {
       id: '50000000-0000-4000-8000-000000000001',
       userId: ids.doctor,
       role: Role.DOCTOR,
       wardId: ids.ed,
+      departmentId: ids.emergency,
+      shiftId: ids.dayShift,
     },
     {
       id: '50000000-0000-4000-8000-000000000002',
       userId: ids.nurse,
       role: Role.NURSE,
       wardId: ids.wardA,
+      departmentId: ids.cardiology,
+      shiftId: ids.dayShift,
     },
-    { id: '50000000-0000-4000-8000-000000000003', userId: ids.clerk, role: Role.RECORDS_CLERK },
+    { id: '50000000-0000-4000-8000-000000000003', userId: ids.clerk, role: Role.RECORDS_CLERK, departmentId: ids.medicine, shiftId: ids.dayShift },
     { id: '50000000-0000-4000-8000-000000000004', userId: ids.audit, role: Role.AUDIT_OFFICER },
     { id: '50000000-0000-4000-8000-000000000005', userId: ids.admin, role: Role.ADMIN },
     {
@@ -157,12 +194,15 @@ async function main(): Promise<void> {
       userId: ids.lab,
       role: Role.LAB_PHARMACY,
     },
+    { id: '50000000-0000-4000-8000-000000000008', userId: ids.doctor2, role: Role.DOCTOR, wardId: ids.wardA, departmentId: ids.cardiology, shiftId: ids.dayShift },
+    { id: '50000000-0000-4000-8000-000000000009', userId: ids.doctor3, role: Role.DOCTOR, wardId: ids.wardB, departmentId: ids.medicine, shiftId: ids.nightShift },
+    { id: '50000000-0000-4000-8000-000000000010', userId: ids.nurse2, role: Role.NURSE, wardId: ids.ed, departmentId: ids.emergency, shiftId: ids.nightShift },
   ];
   for (const assignment of assignments) {
     await database.assignment.upsert({
       where: { id: assignment.id },
       create: { ...assignment, startsAt, endsAt },
-      update: { role: assignment.role, wardId: assignment.wardId, startsAt, endsAt, active: true },
+      update: { role: assignment.role, wardId: assignment.wardId, departmentId: assignment.departmentId, shiftId: assignment.shiftId, startsAt, endsAt, active: true },
     });
   }
   await database.caseAttachment.upsert({
@@ -170,6 +210,15 @@ async function main(): Promise<void> {
     create: { userId: ids.doctor, patientId: ids.chidi, startsAt },
     update: {},
   });
+  for (const [userId, patientId] of [
+    [ids.doctor, ids.ibrahim], [ids.doctor2, ids.chidi], [ids.doctor2, ids.fatima],
+    [ids.doctor3, ids.amina], [ids.nurse, ids.fatima], [ids.nurse2, ids.grace],
+  ] as const) {
+    await database.caseAttachment.upsert({
+      where: { userId_patientId_startsAt: { userId, patientId, startsAt } },
+      create: { userId, patientId, startsAt }, update: {},
+    });
+  }
   await database.orderLink.upsert({
     where: { id: '60000000-0000-4000-8000-000000000001' },
     create: {

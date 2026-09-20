@@ -7,6 +7,8 @@ import {
   requestSensitiveFieldReveal as backendRequestSensitiveFieldReveal,
   addClinicalNote as backendAddClinicalNote,
   transferPatient as backendTransferPatient,
+  getAdminPatients as backendGetAdminPatients,
+  getAdminPatient as backendGetAdminPatient,
 } from "./backendAdapter";
 
 const normalizeRole = (value = "") => String(value || "").trim().toLowerCase();
@@ -60,6 +62,7 @@ export function canAccessPatient(user, patient, context = {}) {
 
 export async function getPatients(user, query) {
   if (isBackendEnabled()) {
+    if (user?.backendRole === "ADMIN") return backendGetAdminPatients(query);
     return backendGetPatients(query);
   }
 
@@ -80,6 +83,15 @@ export async function getPatients(user, query) {
 
 export async function getPatientById(id, user) {
   if (isBackendEnabled()) {
+    if (user?.backendRole === "ADMIN") {
+      const patient = await backendGetAdminPatient(id);
+      return {
+        id: patient.id, patientNumber: patient.fhirId, initials: patient.displayName?.split(/\s+/).map((name) => name[0]).join("").slice(0, 2), name: patient.displayName,
+        age: patient.birthDate ? Math.floor((Date.now() - new Date(patient.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null,
+        gender: "-", ward: patient.currentWard?.name || "-", department: patient.department?.name || "-", status: patient.status,
+        admittedAt: patient.admittedAt, dischargedAt: patient.dischargedAt, assignments: patient.assignments || [], demographics: {}, diagnosis: [], medications: [], labs: [], sensitiveFields: {}, policyFields: [],
+      };
+    }
     return backendGetPatientById(id, user);
   }
 

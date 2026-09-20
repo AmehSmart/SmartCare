@@ -15,6 +15,12 @@ const AssignmentSchema = z.object({
   endsAt: z.coerce.date(),
 });
 
+const PatientAssignmentSchema = z.object({
+  userId: z.uuid(),
+  startsAt: z.coerce.date().optional(),
+  endsAt: z.coerce.date().optional(),
+});
+
 @Controller('v1/admin')
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
@@ -22,6 +28,62 @@ export class AdminController {
   @Get('roster')
   roster(@Principal() principal: RequestPrincipal): Promise<unknown> {
     return this.admin.roster(principal);
+  }
+
+  @Get('patients')
+  patients(
+    @Principal() principal: RequestPrincipal,
+    @Param() _params: Record<string, never>,
+  ): Promise<unknown> {
+    return this.admin.patients(principal);
+  }
+
+  @Get('patients/:id')
+  patient(
+    @Principal() principal: RequestPrincipal,
+    @Param('id', UuidValidationPipe) id: string,
+  ): Promise<unknown> {
+    return this.admin.patient(principal, id);
+  }
+
+  @Get('patients/:id/assignments')
+  patientAssignments(
+    @Principal() principal: RequestPrincipal,
+    @Param('id', UuidValidationPipe) id: string,
+  ): Promise<unknown> {
+    return this.admin.patientAssignments(principal, id);
+  }
+
+  @Post('patients/:id/assignments')
+  assignPatient(
+    @Principal() principal: RequestPrincipal,
+    @Param('id', UuidValidationPipe) patientId: string,
+    @Body(new ZodValidationPipe(PatientAssignmentSchema)) body: z.infer<typeof PatientAssignmentSchema>,
+  ): Promise<unknown> {
+    return this.admin.assignPatient(principal, patientId, body);
+  }
+
+  @Delete('patient-assignments/:id')
+  removePatientAssignment(
+    @Principal() principal: RequestPrincipal,
+    @Param('id', UuidValidationPipe) id: string,
+  ): Promise<{ removed: true }> {
+    return this.admin.removePatientAssignment(principal, id);
+  }
+
+  @Patch('patients/:id/status')
+  status(
+    @Principal() principal: RequestPrincipal,
+    @Param('id', UuidValidationPipe) id: string,
+    @Body(new ZodValidationPipe(z.object({ status: z.enum(['ACTIVE', 'DISCHARGED', 'INACTIVE']) })))
+    body: { status: 'ACTIVE' | 'DISCHARGED' | 'INACTIVE' },
+  ): Promise<unknown> {
+    return this.admin.setPatientStatus(principal, id, body.status);
+  }
+
+  @Get('assignment-staff')
+  assignmentStaff(@Principal() principal: RequestPrincipal): Promise<unknown> {
+    return this.admin.assignmentStaff(principal);
   }
 
   @Post('assignments')

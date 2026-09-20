@@ -21,6 +21,12 @@ enum Role {
   ADMIN
 }
 
+enum PatientStatus {
+  ACTIVE
+  DISCHARGED
+  INACTIVE
+}
+
 enum SourceLabel {
   PATIENT_ENTERED
   DOCUMENT_BACKED
@@ -75,19 +81,53 @@ model Facility {
   createdAt   DateTime      @default(now()) @map("created_at")
   users       UserProfile[]
   wards       Ward[]
+  departments Department[]
+  shifts      Shift[]
   patients    Patient[]
   signingKeys FacilitySigningKey[]
 
   @@map("facilities")
 }
 
+model Department {
+  id         String      @id @default(uuid()) @db.Uuid
+  facilityId String      @map("facility_id") @db.Uuid
+  name       String
+  code       String
+  active     Boolean     @default(true)
+  facility   Facility    @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  wards      Ward[]
+  patients   Patient[]
+  assignments Assignment[]
+
+  @@unique([facilityId, code])
+  @@map("departments")
+}
+
+model Shift {
+  id         String      @id @default(uuid()) @db.Uuid
+  facilityId String      @map("facility_id") @db.Uuid
+  name       String
+  code       String
+  startsAt   String      @map("starts_at")
+  endsAt     String      @map("ends_at")
+  active     Boolean     @default(true)
+  facility   Facility    @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+
+  @@unique([facilityId, code])
+  @@map("shifts")
+}
+
 model Ward {
   id         String       @id @default(uuid()) @db.Uuid
   facilityId String       @map("facility_id") @db.Uuid
+  departmentId String?    @map("department_id") @db.Uuid
   name       String
   code       String
   active     Boolean      @default(true)
   facility   Facility     @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  department Department?  @relation(fields: [departmentId], references: [id])
   patients   Patient[]
   assignments Assignment[]
 
@@ -100,13 +140,18 @@ model Patient {
   fhirId          String           @unique @map("fhir_id")
   facilityId      String           @map("facility_id") @db.Uuid
   currentWardId   String?          @map("current_ward_id") @db.Uuid
+  departmentId    String?          @map("department_id") @db.Uuid
   displayName     String           @map("display_name")
   birthDate       DateTime?        @map("birth_date") @db.Date
   active          Boolean          @default(true)
+  status          PatientStatus    @default(ACTIVE)
+  admittedAt      DateTime?        @map("admitted_at")
+  dischargedAt    DateTime?        @map("discharged_at")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
   facility        Facility         @relation(fields: [facilityId], references: [id])
   currentWard     Ward?            @relation(fields: [currentWardId], references: [id])
+  department      Department?      @relation(fields: [departmentId], references: [id])
   resources       FhirResource[]
   profiles        UserProfile[]
   caseAttachments CaseAttachment[]
@@ -143,6 +188,8 @@ model Assignment {
   userId      String   @map("user_id") @db.Uuid
   role        Role
   wardId      String?  @map("ward_id") @db.Uuid
+  departmentId String? @map("department_id") @db.Uuid
+  shiftId     String?  @map("shift_id") @db.Uuid
   startsAt    DateTime @map("starts_at")
   endsAt      DateTime @map("ends_at")
   active      Boolean  @default(true)
@@ -150,6 +197,8 @@ model Assignment {
   updatedAt   DateTime @updatedAt @map("updated_at")
   user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
   ward        Ward?    @relation(fields: [wardId], references: [id])
+  department  Department? @relation(fields: [departmentId], references: [id])
+  shift       Shift?   @relation(fields: [shiftId], references: [id])
   dutyContexts DutyContext[]
 
   @@index([userId, startsAt, endsAt])
