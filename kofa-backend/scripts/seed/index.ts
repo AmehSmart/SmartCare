@@ -368,6 +368,249 @@ async function seedResources(): Promise<void> {
         name: [{ family: 'Bello', given: ['Fatima'] }],
         gender: 'female',
         birthDate: '1994-11-21',
+        telecom: [{ system: 'phone', value: '+234-803-555-0212' }],
+        address: [{ city: 'Zaria', state: 'Kaduna', country: 'NG' }],
+        extension: [extension('emergency-contact', 'Halima Bello · +234-803-555-0299')],
+      },
+    },
+
+    // --- Sensitive + billing for Amina (SCD patient) ---
+    {
+      patientId: ids.amina,
+      resourceType: 'Observation',
+      fhirId: 'amina-hiv-status',
+      resource: {
+        resourceType: 'Observation',
+        id: 'amina-hiv-status',
+        status: 'final',
+        meta: {
+          security: [
+            { system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality', code: 'R' },
+          ],
+        },
+        code: { text: 'HIV status' },
+        valueCodeableConcept: { text: 'Negative (screened 2026-06-02)' },
+      },
+    },
+    {
+      patientId: ids.amina,
+      resourceType: 'Coverage',
+      fhirId: 'amina-coverage',
+      resource: {
+        resourceType: 'Coverage',
+        id: 'amina-coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/patient-amina-musa' },
+        payor: [{ display: 'NHIS · Kaduna State scheme' }],
+        subscriberId: 'NHIS-KD-4471902',
+      },
+    },
+
+    // --- Chidi Okafor (Ward A, attending doctor case) ---
+    {
+      patientId: ids.chidi,
+      resourceType: 'Condition',
+      fhirId: 'chidi-scd',
+      resource: {
+        resourceType: 'Condition',
+        id: 'chidi-scd',
+        clinicalStatus: { text: 'active' },
+        code: { text: 'Sickle cell disease (HbSC)' },
+      },
+    },
+    {
+      patientId: ids.chidi,
+      resourceType: 'Observation',
+      fhirId: 'chidi-genotype',
+      resource: {
+        resourceType: 'Observation',
+        id: 'chidi-genotype',
+        status: 'final',
+        meta: {
+          security: [
+            { system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality', code: 'R' },
+          ],
+        },
+        code: { text: 'Haemoglobin genotype' },
+        valueCodeableConcept: { text: 'HbSC' },
+        extension: [extension('summary-category', 'genotype'), extension('summary-value', 'HbSC')],
+      },
+    },
+    {
+      patientId: ids.chidi,
+      resourceType: 'AllergyIntolerance',
+      fhirId: 'chidi-allergy-sulfa',
+      resource: {
+        resourceType: 'AllergyIntolerance',
+        id: 'chidi-allergy-sulfa',
+        clinicalStatus: { text: 'active' },
+        patient: { reference: 'Patient/patient-chidi-okafor' },
+        code: { text: 'Sulfonamides - rash' },
+      },
+    },
+    {
+      patientId: ids.chidi,
+      resourceType: 'MedicationRequest',
+      fhirId: 'chidi-folic-acid',
+      resource: {
+        resourceType: 'MedicationRequest',
+        id: 'chidi-folic-acid',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/patient-chidi-okafor' },
+        medicationCodeableConcept: { text: 'Folic acid 5mg once daily' },
+      },
+    },
+    {
+      patientId: ids.chidi,
+      resourceType: 'Observation',
+      fhirId: 'chidi-hb',
+      resource: {
+        resourceType: 'Observation',
+        id: 'chidi-hb',
+        status: 'final',
+        code: { text: 'Haemoglobin' },
+        valueQuantity: { value: 7.6, unit: 'g/dL' },
+      },
+    },
+    {
+      patientId: ids.chidi,
+      resourceType: 'Observation',
+      fhirId: 'chidi-hiv-status',
+      resource: {
+        resourceType: 'Observation',
+        id: 'chidi-hiv-status',
+        status: 'final',
+        meta: {
+          security: [
+            { system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality', code: 'R' },
+          ],
+        },
+        code: { text: 'HIV status' },
+        valueCodeableConcept: { text: 'Positive - on ART, last viral load undetectable' },
+      },
+    },
+    {
+      patientId: ids.chidi,
+      resourceType: 'Coverage',
+      fhirId: 'chidi-coverage',
+      resource: {
+        resourceType: 'Coverage',
+        id: 'chidi-coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/patient-chidi-okafor' },
+        payor: [{ display: 'Hygeia HMO' }],
+        subscriberId: 'HYG-99213-CO',
+      },
+    },
+
+    // --- Fatima Bello (Ward A) ---
+    {
+      patientId: ids.fatima,
+      resourceType: 'Condition',
+      fhirId: 'fatima-scd',
+      resource: {
+        resourceType: 'Condition',
+        id: 'fatima-scd',
+        clinicalStatus: { text: 'active' },
+        code: { text: 'Sickle cell disease (HbSS) with recurrent vaso-occlusive crises' },
+      },
+    },
+    {
+      patientId: ids.fatima,
+      resourceType: 'Observation',
+      fhirId: 'fatima-genotype',
+      resource: {
+        resourceType: 'Observation',
+        id: 'fatima-genotype',
+        status: 'final',
+        meta: {
+          security: [
+            { system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality', code: 'R' },
+          ],
+        },
+        code: { text: 'Haemoglobin genotype' },
+        valueCodeableConcept: { text: 'HbSS' },
+        extension: [extension('summary-category', 'genotype'), extension('summary-value', 'HbSS')],
+      },
+    },
+    {
+      patientId: ids.fatima,
+      resourceType: 'AllergyIntolerance',
+      fhirId: 'fatima-allergy-penicillin',
+      resource: {
+        resourceType: 'AllergyIntolerance',
+        id: 'fatima-allergy-penicillin',
+        clinicalStatus: { text: 'active' },
+        patient: { reference: 'Patient/patient-fatima-bello' },
+        code: { text: 'Penicillin - anaphylaxis' },
+      },
+    },
+    {
+      patientId: ids.fatima,
+      resourceType: 'MedicationRequest',
+      fhirId: 'fatima-hydroxyurea',
+      resource: {
+        resourceType: 'MedicationRequest',
+        id: 'fatima-hydroxyurea',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/patient-fatima-bello' },
+        medicationCodeableConcept: { text: 'Hydroxyurea 500mg once daily' },
+      },
+    },
+    {
+      patientId: ids.fatima,
+      resourceType: 'Procedure',
+      fhirId: 'fatima-transfusion-2026',
+      resource: {
+        resourceType: 'Procedure',
+        id: 'fatima-transfusion-2026',
+        status: 'completed',
+        code: { text: 'Red blood cell transfusion · 2026-06-14' },
+        extension: [extension('summary-category', 'transfusion')],
+      },
+    },
+    {
+      patientId: ids.fatima,
+      resourceType: 'Condition',
+      fhirId: 'fatima-acs',
+      resource: {
+        resourceType: 'Condition',
+        id: 'fatima-acs',
+        clinicalStatus: { text: 'active' },
+        code: { text: 'Acute chest syndrome (recurrent)' },
+        extension: [extension('summary-category', 'key-complication')],
+      },
+    },
+    {
+      patientId: ids.fatima,
+      resourceType: 'Observation',
+      fhirId: 'fatima-mental-health',
+      resource: {
+        resourceType: 'Observation',
+        id: 'fatima-mental-health',
+        status: 'final',
+        meta: {
+          security: [
+            { system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality', code: 'R' },
+          ],
+        },
+        code: { text: 'Mental health note' },
+        valueString: 'Depression secondary to chronic pain; on counselling, no pharmacotherapy.',
+      },
+    },
+    {
+      patientId: ids.fatima,
+      resourceType: 'Coverage',
+      fhirId: 'fatima-coverage',
+      resource: {
+        resourceType: 'Coverage',
+        id: 'fatima-coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/patient-fatima-bello' },
+        payor: [{ display: 'NHIS · Kaduna State scheme' }],
+        subscriberId: 'NHIS-KD-8830145',
       },
     },
   ];
