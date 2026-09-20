@@ -59,6 +59,7 @@ export default function PatientRecords() {
     const [assignmentType, setAssignmentType] = useState("Primary Care");
     const [selectedStaffId, setSelectedStaffId] = useState("");
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
 
     useEffect(() => {
         let mounted = true;
@@ -92,12 +93,16 @@ export default function PatientRecords() {
                     });
                     setAssignments(getPatientAssignmentsForPatient(nextPatient.id));
                 }
-            } catch {
-                // Out-of-scope (403) or any load failure: send the clinician to the
-                // scope-denied screen, which offers the audited break-glass path.
-                if (mounted) {
+            } catch (err) {
+                if (!mounted) return;
+                // Only a genuine scope denial (403) goes to the break-glass path.
+                // Other failures (e.g. a 503 while the audit service wakes) show an
+                // error with retry - they must NOT look like a scope denial.
+                if (err?.status === 403 || err?.code === "OUTSIDE_AUTHORIZED_SCOPE") {
                     navigate(`/patients/${patientId}/denied`, { replace: true });
+                    return;
                 }
+                setLoadError(err?.message || "This patient could not be loaded right now. Please try again.");
                 return;
             } finally {
                 if (mounted) {
@@ -207,6 +212,30 @@ export default function PatientRecords() {
                     <div className="pr-content">
                         <div className="pr-card">
                             <p className="pr-loading">Loading patient record...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <div className="pr-page">
+                <Sidebar navItems={NAV_ITEMS} activeKey="records" user={currentUser} />
+                <div className="pr-main">
+                    <div className="pr-topstrip" />
+                    <div className="pr-page-title">
+                        <div className="pr-page-title__inner">
+                            <h1>Patient Records</h1>
+                            <Link className="pr-header-back" to="/patients">Back to patient list</Link>
+                        </div>
+                    </div>
+                    <div className="pr-content">
+                        <div className="pr-card">
+                            <p className="pr-loading" role="alert">{loadError}</p>
+                            <p className="pr-loading" style={{ opacity: 0.7 }}>The service may be waking up. Wait a moment and reload.</p>
+                            <Button onClick={() => window.location.reload()}>Retry</Button>
                         </div>
                     </div>
                 </div>
