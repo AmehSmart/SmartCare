@@ -69,6 +69,8 @@ model UserProfile {
   assignedOrders   OrderLink[]       @relation("OrderAssignee")
   createdOrders    OrderLink[]       @relation("OrderCreator")
   notifications    Notification[]
+  invitationsCreated AdminInvitation[] @relation("InvitationCreator")
+  invitationsUsed    AdminInvitation[] @relation("InvitationUser")
 
   @@map("user_profiles")
 }
@@ -87,6 +89,22 @@ model Facility {
   signingKeys FacilitySigningKey[]
 
   @@map("facilities")
+}
+
+model AdminInvitation {
+  id          String   @id @default(uuid()) @db.Uuid
+  codeHash    String   @unique @map("code_hash")
+  createdById String   @map("created_by_id") @db.Uuid
+  expiresAt   DateTime @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  usedById    String?  @map("used_by_id") @db.Uuid
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   UserProfile @relation("InvitationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  usedBy      UserProfile? @relation("InvitationUser", fields: [usedById], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
+  @@map("admin_invitations")
 }
 
 model Department {
