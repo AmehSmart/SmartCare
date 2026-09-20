@@ -296,6 +296,17 @@ export async function endEmergencyAccess({ grantId }) {
 
 // --- audit ----------------------------------------------------------------
 
+// Seeded staff, so the audit log reads with names instead of raw UUIDs.
+const KNOWN_ACTORS = {
+  "20000000-0000-4000-8000-000000000001": "Dr Aisha Bello",
+  "20000000-0000-4000-8000-000000000002": "Maryam Yusuf",
+  "20000000-0000-4000-8000-000000000003": "Musa Ibrahim",
+  "20000000-0000-4000-8000-000000000004": "Zainab Garba",
+  "20000000-0000-4000-8000-000000000005": "Hauwa Lawal",
+  "20000000-0000-4000-8000-000000000006": "Amina Musa",
+  "20000000-0000-4000-8000-000000000007": "Ifeanyi Eze",
+};
+
 function mapAuditEvent(event) {
   const occurred = event.occurredAt ? new Date(event.occurredAt) : null;
   return {
@@ -305,7 +316,8 @@ function mapAuditEvent(event) {
     date: occurred ? occurred.toLocaleDateString("en-GB") : "",
     time: occurred ? occurred.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "",
     timestamp: event.occurredAt,
-    actor: event.actorId,
+    actor: KNOWN_ACTORS[event.actorId] || event.actorId,
+    actorFullName: KNOWN_ACTORS[event.actorId] || event.actorId,
     actorId: event.actorId,
     role: event.actorRole,
     action: event.action,

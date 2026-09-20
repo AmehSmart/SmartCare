@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import "./AuditLog.css";
 import Sidebar from "../../components/layout/Sidebar";
 import Icon from "../../components/ui/Icon";
 import { NAV_ITEMS, CURRENT_USER } from "../../components/layout/navConfig";
+import { useAuth } from "../../context/useAuth";
+import { getAuditEvents } from "../../services/api/auditApi";
 import FilterBar from "./components/FilterBar";
 import ChainBreakBanner from "./components/ChainBreakBanner";
 import AuditLogTable from "./components/AuditLogTable";
-import Pagination from "./components/Pagination";
 import EventDetailPanel from "./components/EventDetailPanel";
 
 const EVENTS = [
@@ -73,27 +74,35 @@ const EVENTS = [
     },
 ];
 
-const TOTAL_ROWS = 20;
-const TOTAL_PAGES = 2;
-
 export default function AuditLog() {
+    const { user } = useAuth();
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState("");
     const [activeFilter, setActiveFilter] = useState("All");
-    const [page, setPage] = useState(1);
     const [selected, setSelected] = useState(null);
+
+    useEffect(() => {
+        let mounted = true;
+        getAuditEvents()
+            .then((data) => { if (mounted) setEvents(data); })
+            .catch((err) => { if (mounted) setLoadError(err.message || "Unable to load the audit log."); })
+            .finally(() => { if (mounted) setLoading(false); });
+        return () => { mounted = false; };
+    }, []);
 
     const handleDownload = () => {
         const csvRows = [
-            ["Date", "Time", "Actor", "Role", "Action", "Field", "Target", "Event ID", "IP"],
-            ...EVENTS.map((event) => [
+            ["Date", "Time", "Actor", "Role", "Action", "Field", "Target", "Event ID"],
+            ...events.map((event) => [
                 event.date,
                 event.time,
-                event.actorFullName,
+                event.actorFullName || event.actor,
                 event.role,
                 event.action,
                 event.field ?? "-",
                 event.target,
                 event.eventId,
-                event.ip,
             ]),
         ];
 
@@ -110,17 +119,17 @@ export default function AuditLog() {
     };
 
     const filteredEvents = useMemo(() => {
-        if (activeFilter === "All") return EVENTS;
-        if (activeFilter === "Anomalies") return EVENTS.filter((e) => e.flagged);
-        return EVENTS.filter((e) => e.action === activeFilter);
-    }, [activeFilter]);
+        if (activeFilter === "All") return events;
+        if (activeFilter === "Anomalies") return events.filter((e) => e.flagged);
+        return events.filter((e) => String(e.action || "").toLowerCase().includes(activeFilter.toLowerCase()));
+    }, [activeFilter, events]);
 
-    const hasChainBreak = EVENTS.some((e) => e.chainOk === false);
+    const hasChainBreak = events.some((e) => e.chainOk === false);
     const selectedIndex = selected ? filteredEvents.findIndex((e) => e.id === selected.id) : -1;
 
     return (
         <div className="al-page">
-            <Sidebar navItems={NAV_ITEMS} user={CURRENT_USER} />
+            <Sidebar navItems={NAV_ITEMS} user={user || CURRENT_USER} />
 
             <div className="al-main">
                 <div className="al-topstrip" />
@@ -146,8 +155,7 @@ export default function AuditLog() {
                                 <div>
                                     <h2>Audit log</h2>
                                     <p>
-                                        {TOTAL_ROWS} total events · synced to remote store · retained
-                                        indefinitely
+                                        {events.length} events · hash-chained in a separate audit store
                                     </p>
                                 </div>
                                 <button type="button" className="al-download-btn" onClick={handleDownload}>
@@ -158,18 +166,16 @@ export default function AuditLog() {
 
                             <FilterBar active={activeFilter} onChange={setActiveFilter} />
 
-                            <AuditLogTable
-                                events={filteredEvents}
-                                onSelect={setSelected}
-                                selectedId={selected?.id}
-                            />
-
-                            <Pagination
-                                page={page}
-                                totalPages={TOTAL_PAGES}
-                                totalRows={TOTAL_ROWS}
-                                onChange={setPage}
-                            />
+                            {loading && <p className="al-state">Loading audit events...</p>}
+                            {!loading && loadError && <p className="al-state al-state--error">{loadError}</p>}
+                            {!loading && !loadError && filteredEvents.length === 0 && <p className="al-state">No audit events.</p>}
+                            {!loading && !loadError && filteredEvents.length > 0 && (
+                                <AuditLogTable
+                                    events={filteredEvents}
+                                    onSelect={setSelected}
+                                    selectedId={selected?.id}
+                                />
+                            )}
                         </div>
 
                         {selected && (

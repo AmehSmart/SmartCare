@@ -558,3 +558,5 @@
     padding: var(--sp-4);
   }
 }
+.al-state { padding: 24px; color: var(--color-text-2); }
+.al-state--error { color: var(--color-danger); }
