@@ -120,8 +120,9 @@ function mapPatientCard(item) {
   };
 }
 
-export async function getPatients() {
-  const data = await apiFetch("/v1/patients?limit=50");
+export async function getPatients(query) {
+  const q = query && query.trim() ? `&query=${encodeURIComponent(query.trim())}` : "";
+  const data = await apiFetch(`/v1/patients?limit=50${q}`);
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map(mapPatientCard);
 }

@@ -57,9 +57,9 @@ export function canAccessPatient(user, patient, context = {}) {
   return assignedToUser || wardMatches;
 }
 
-export async function getPatients(user) {
+export async function getPatients(user, query) {
   if (isBackendEnabled()) {
-    return backendGetPatients(user);
+    return backendGetPatients(query);
   }
 
   await new Promise((resolve) => setTimeout(resolve, 250));

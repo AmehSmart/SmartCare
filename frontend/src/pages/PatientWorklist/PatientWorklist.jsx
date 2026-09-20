@@ -21,6 +21,7 @@ const DEMO_PATIENTS = [
 export default function PatientWorklist() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const isRecordsClerk = String(user?.role || "").toLowerCase().includes("records");
     const [lookupId, setLookupId] = useState("");
     const [patients, setPatients] = useState([]);
     const [query, setQuery] = useState("");
@@ -30,26 +31,26 @@ export default function PatientWorklist() {
 
     useEffect(() => {
         let mounted = true;
+        setLoading(true);
 
-        async function loadPatients() {
+        // Server-side search (debounced): the backend scopes results per role, so a
+        // records clerk searches the whole facility while a nurse stays on her ward.
+        const handle = setTimeout(async () => {
             try {
-                const data = await getPatients(user);
-                if (mounted) {
-                    setPatients(data);
-                }
+                const data = await getPatients(user, query);
+                if (mounted) setPatients(data);
+            } catch {
+                if (mounted) setPatients([]);
             } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
+                if (mounted) setLoading(false);
             }
-        }
-
-        loadPatients();
+        }, query ? 300 : 0);
 
         return () => {
             mounted = false;
+            clearTimeout(handle);
         };
-    }, [user]);
+    }, [user, query]);
 
     const statusOptions = useMemo(() => {
         const statuses = new Set(["All"]);
@@ -59,11 +60,12 @@ export default function PatientWorklist() {
         return [...statuses];
     }, [patients]);
 
+    // The query is applied server-side (scoped per role); only status/scope
+    // filters are applied client-side on the returned results.
     const filtered = useMemo(() => patients.filter((patient) => {
-        const matchesQuery = `${patient.name} ${patient.id} ${patient.ward}`.toLowerCase().includes(query.toLowerCase());
         const matchesStatus = statusFilter === "All" || patient.status === statusFilter;
-        return matchesQuery && matchesStatus && (!scopeOnly || patient.scope === "In scope");
-    }), [patients, query, scopeOnly, statusFilter]);
+        return matchesStatus && (!scopeOnly || patient.scope === "In scope");
+    }), [patients, scopeOnly, statusFilter]);
 
     return (
         <div className="worklist-page">
@@ -75,7 +77,7 @@ export default function PatientWorklist() {
                         <div>
                             <p className="worklist-eyebrow">Clinical worklist</p>
                             <h1>Patients</h1>
-                            <p>Search is limited to your current role, ward, and shift scope.</p>
+                            <p>{isRecordsClerk ? "Search the full facility patient register (demographics and billing only)." : "Search is limited to your current role, ward, and shift scope."}</p>
                         </div>
                         <Pill tone="blue"><Icon name="shield" /> {user?.ward || "All Units"} · {user?.shift || "All Shifts"}</Pill>
                     </div>
