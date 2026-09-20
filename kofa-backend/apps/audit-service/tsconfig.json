@@ -4,7 +4,9 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "../../dist/apps/audit-service",
-    "tsBuildInfoFile": "../../dist/apps/audit-service.tsbuildinfo"
+    "tsBuildInfoFile": "../../dist/apps/audit-service.tsbuildinfo",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*.ts"]
 }

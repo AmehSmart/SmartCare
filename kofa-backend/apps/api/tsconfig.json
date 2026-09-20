@@ -8,7 +8,9 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "../../dist/apps/api",
-    "tsBuildInfoFile": "../../dist/apps/api.tsbuildinfo"
+    "tsBuildInfoFile": "../../dist/apps/api.tsbuildinfo",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*.ts"]
 }
