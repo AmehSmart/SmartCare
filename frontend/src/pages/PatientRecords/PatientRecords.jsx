@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import "./PatientRecords.css";
 import Sidebar from "../../components/layout/Sidebar";
 import Icon from "../../components/ui/Icon";
@@ -34,6 +34,7 @@ const VITALS = [
 
 export default function PatientRecords() {
     const { patientId } = useParams();
+    const navigate = useNavigate();
     const { user } = useAuth();
     const currentUser = user || CURRENT_USER;
     const [activeTab, setActiveTab] = useState("overview");
@@ -76,6 +77,13 @@ export default function PatientRecords() {
                     });
                     setAssignments(getPatientAssignmentsForPatient(nextPatient.id));
                 }
+            } catch {
+                // Out-of-scope (403) or any load failure: send the clinician to the
+                // scope-denied screen, which offers the audited break-glass path.
+                if (mounted) {
+                    navigate(`/patients/${patientId}/denied`, { replace: true });
+                }
+                return;
             } finally {
                 if (mounted) {
                     setLoading(false);
