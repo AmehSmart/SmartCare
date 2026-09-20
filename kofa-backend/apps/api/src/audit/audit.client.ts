@@ -81,31 +81,50 @@ export class AuditClient {
     options: { method: string; body?: unknown; actorId?: string; signal?: AbortSignal },
     parse: (value: unknown) => T,
   ): Promise<T> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5_000);
-    const signal = options.signal
-      ? AbortSignal.any([options.signal, controller.signal])
-      : controller.signal;
-    try {
-      const response = await fetch(new URL(path, this.config.AUDIT_SERVICE_URL), {
-        method: options.method,
-        headers: {
-          authorization: `Bearer ${this.config.AUDIT_SERVICE_TOKEN}`,
-          'content-type': 'application/json',
-          ...(options.actorId ? { 'x-kofa-actor': options.actorId } : {}),
-        },
-        body: options.body === undefined ? undefined : JSON.stringify(options.body),
-        signal,
-        ...(this.dispatcher ? { dispatcher: this.dispatcher } : {}),
-      });
-      if (!response.ok) throw new Error(`Audit service returned ${response.status}`);
-      return parse(await response.json());
-    } catch (error) {
-      throw new ServiceUnavailableException('Required audit evidence could not be committed', {
-        cause: error,
-      });
-    } finally {
-      clearTimeout(timeout);
+    // The audit service can be cold (serverless/free tier) and take a while to
+    // wake. Retry transient failures (network, timeout, 5xx) with backoff so the
+    // first request does not fail with 503. Appends carry an idempotency key, so
+    // retries never double-write. Client errors (4xx) are not retried.
+    const attemptTimeouts = [12_000, 20_000, 25_000];
+    let lastError: unknown;
+    for (let attempt = 0; attempt < attemptTimeouts.length; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), attemptTimeouts[attempt]);
+      const signal = options.signal
+        ? AbortSignal.any([options.signal, controller.signal])
+        : controller.signal;
+      try {
+        const response = await fetch(new URL(path, this.config.AUDIT_SERVICE_URL), {
+          method: options.method,
+          headers: {
+            authorization: `Bearer ${this.config.AUDIT_SERVICE_TOKEN}`,
+            'content-type': 'application/json',
+            ...(options.actorId ? { 'x-kofa-actor': options.actorId } : {}),
+          },
+          body: options.body === undefined ? undefined : JSON.stringify(options.body),
+          signal,
+          ...(this.dispatcher ? { dispatcher: this.dispatcher } : {}),
+        });
+        if (response.ok) return parse(await response.json());
+        if (response.status >= 400 && response.status < 500) {
+          // Real client error (auth/validation) - do not retry.
+          throw new ServiceUnavailableException('Required audit evidence could not be committed', {
+            cause: new Error(`Audit service returned ${response.status}`),
+          });
+        }
+        lastError = new Error(`Audit service returned ${response.status}`);
+      } catch (error) {
+        if (error instanceof ServiceUnavailableException) throw error;
+        lastError = error;
+      } finally {
+        clearTimeout(timeout);
+      }
+      if (attempt < attemptTimeouts.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1_500 * (attempt + 1)));
+      }
     }
+    throw new ServiceUnavailableException('Required audit evidence could not be committed', {
+      cause: lastError,
+    });
   }
 }
