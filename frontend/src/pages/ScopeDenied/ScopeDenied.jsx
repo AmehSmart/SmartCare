@@ -5,7 +5,9 @@ import Button from "../../components/ui/Button";
 
 export default function ScopeDenied() {
     const navigate = useNavigate();
-    const { id = "PT-2024-0561" } = useParams();
+    // Route param is :patientId - read it (was reading `id`, which was always
+    // undefined and fell back to a mock id, breaking break-glass with a non-UUID).
+    const { patientId } = useParams();
 
     return (
         <div className="sd-page">
@@ -35,7 +37,8 @@ export default function ScopeDenied() {
                     <Button
                         variant="breakglass"
                         full
-                        onClick={() => navigate(`/patients/${id}/breakglass`)}
+                        disabled={!patientId}
+                        onClick={() => navigate(`/patients/${patientId}/breakglass`)}
                     >
                         <Icon name="alert" />
                         Request Emergency Access (Break-Glass)
