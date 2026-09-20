@@ -34,11 +34,23 @@ const VITALS = [
     { label: "Weight", value: "71", unit: "kg", tone: "purple" },
 ];
 
+// Which chart tabs each role may see, matching the backend field policy.
+const TAB_ACCESS = {
+    "Attending Doctor": ["overview", "clinical", "appointments", "sensitive"],
+    "Doctor": ["overview", "clinical", "appointments", "sensitive"],
+    "Nurse": ["overview", "clinical", "appointments", "sensitive"],
+    "Visiting/Locum Doctor": ["overview", "clinical", "appointments"],
+    "Lab/Pharmacy Staff": ["overview", "clinical"],
+    "Records Clerk": ["overview"],
+    "Administrator": ["overview"],
+};
+
 export default function PatientRecords() {
     const { patientId } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     const currentUser = user || CURRENT_USER;
+    const allowedTabs = TAB_ACCESS[currentUser.role] || ["overview", "clinical", "appointments"];
     const [activeTab, setActiveTab] = useState("overview");
     const [patient, setPatient] = useState(null);
     const [assignments, setAssignments] = useState([]);
@@ -152,7 +164,9 @@ export default function PatientRecords() {
     const renderTab = () => {
         if (!patient) return null;
 
-        switch (activeTab) {
+        // Never render a tab the role is not permitted to see.
+        const safeTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0];
+        switch (safeTab) {
             case "overview":
                 return (
                     <>
@@ -253,7 +267,7 @@ export default function PatientRecords() {
 
                     <div className="pr-card">
                         <PatientHeader patient={patient} />
-                        <PatientTabs activeTab={activeTab} onChange={setActiveTab} />
+                        <PatientTabs activeTab={activeTab} onChange={setActiveTab} allowedTabs={allowedTabs} />
                         {renderTab()}
                     </div>
 

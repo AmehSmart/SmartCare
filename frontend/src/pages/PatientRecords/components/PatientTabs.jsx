@@ -7,10 +7,11 @@ const TABS = [
     { id: "sensitive", label: "Sensitive", locked: true },
 ];
 
-export default function PatientTabs({ activeTab, onChange }) {
+export default function PatientTabs({ activeTab, onChange, allowedTabs }) {
+    const tabs = allowedTabs ? TABS.filter((tab) => allowedTabs.includes(tab.id)) : TABS;
     return (
         <div className="pr-tabs">
-            {TABS.map((tab) => (
+            {tabs.map((tab) => (
                 <button
                     key={tab.id}
                     className={`pr-tabs__item${activeTab === tab.id ? " pr-tabs__item--active" : ""
