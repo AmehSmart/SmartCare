@@ -5,6 +5,7 @@ import {
   getPatients as backendGetPatients,
   getPatientById as backendGetPatientById,
   requestSensitiveFieldReveal as backendRequestSensitiveFieldReveal,
+  addClinicalNote as backendAddClinicalNote,
 } from "./backendAdapter";
 
 const normalizeRole = (value = "") => String(value || "").trim().toLowerCase();
@@ -147,8 +148,8 @@ export async function requestSensitiveFieldReveal({ patientId, field, reason, ac
 
   await new Promise((resolve) => setTimeout(resolve, 250));
 
-  if (!patientId || !field || !reason || !actorId) {
-    throw new Error("Sensitive field reveal requires patient, field, actor, and reason.");
+  if (!patientId || !reason) {
+    throw new Error("A clinical reason is required to reveal sensitive information.");
   }
 
   return {
@@ -158,5 +159,21 @@ export async function requestSensitiveFieldReveal({ patientId, field, reason, ac
     actorId,
     reason,
     revealedAt: new Date().toISOString(),
+    resources: [
+      { label: "HIV status", value: "Negative (screened 2026-06-02)", source: "HOSPITAL_VERIFIED" },
+      { label: "Mental health note", value: "Mild anxiety at booking; counselled, no pharmacotherapy.", source: "HOSPITAL_VERIFIED" },
+    ],
   };
+}
+
+export async function addClinicalNote({ patientId, fhirId, text }) {
+  const note = String(text ?? "").trim();
+  if (!note) {
+    throw new Error("Enter a note before saving.");
+  }
+  if (isBackendEnabled()) {
+    return backendAddClinicalNote({ patientId, fhirId, text: note });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return { ok: true, patientId, savedAt: new Date().toISOString() };
 }

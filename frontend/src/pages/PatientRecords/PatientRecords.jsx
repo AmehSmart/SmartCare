@@ -14,6 +14,7 @@ import OverviewTab from "./components/OverviewTab";
 import ClinicalTab from "./components/ClinicalTab";
 import AppointmentHistoryTab from "./components/AppointmentHistoryTab";
 import SensitiveTab from "./components/SensitiveTab";
+import AddNoteForm from "./components/AddNoteForm";
 import RecentAccessLog from "./components/RecentAccessLog";
 import { useAuth } from "../../context/useAuth";
 
@@ -60,6 +61,7 @@ export default function PatientRecords() {
                 if (mounted) {
                     setPatient({
                         id: nextPatient.id,
+                        patientNumber: nextPatient.patientNumber,
                         initials: nextPatient.initials,
                         name: nextPatient.name,
                         gender: nextPatient.gender,
@@ -153,11 +155,18 @@ export default function PatientRecords() {
             case "overview":
                 return <OverviewTab patient={patient} assignments={assignments} isAdmin={isAdmin} onAssign={openAssignmentModal} onRemove={handleRemoveAssignment} />;
             case "clinical":
-                return <ClinicalTab patient={patient} />;
+                return (
+                    <>
+                        <ClinicalTab patient={patient} />
+                        {hasPermission(currentUser, "edit_patients") && (
+                            <AddNoteForm patientId={patient.id} fhirId={patient.patientNumber} />
+                        )}
+                    </>
+                );
             case "appointments":
                 return <AppointmentHistoryTab />;
             case "sensitive":
-                return <SensitiveTab patient={patient} />;
+                return <SensitiveTab patientId={patient.id} user={currentUser} />;
             default:
                 return null;
         }

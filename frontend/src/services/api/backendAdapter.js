@@ -212,9 +212,40 @@ export async function requestSensitiveFieldReveal({ patientId, reason }) {
     allowed: true,
     patientId,
     reason,
-    resources: data?.resources || [],
+    resources: (data?.resources || []).map(formatSensitiveResource),
     revealedAt: new Date().toISOString(),
   };
+}
+
+// Turn a permitted sensitive FHIR resource into a { label, value } pair for display.
+function formatSensitiveResource(resource) {
+  const label = resource?.code?.text || resource?.code?.coding?.[0]?.display || resource?.resourceType || "Sensitive record";
+  const value =
+    resource?.valueCodeableConcept?.text ||
+    resource?.valueString ||
+    (resource?.valueQuantity ? `${resource.valueQuantity.value} ${resource.valueQuantity.unit || ""}`.trim() : "") ||
+    resource?.clinicalStatus?.text ||
+    "Recorded";
+  return { label, value, source: resource?._kofa?.source || "HOSPITAL_VERIFIED" };
+}
+
+// Write a free-text clinical note as a FHIR Observation (writable by doctor and
+// nurse). The subject reference must match the patient's FHIR id.
+export async function addClinicalNote({ patientId, fhirId, text }) {
+  const resource = {
+    resourceType: "Observation",
+    id: `note-${Date.now()}`,
+    status: "final",
+    subject: { reference: `Patient/${fhirId}` },
+    code: { text: "Clinical note" },
+    valueString: text,
+    effectiveDateTime: new Date().toISOString(),
+  };
+  return apiFetch(`/v1/patients/${patientId}/resources`, {
+    method: "POST",
+    idempotencyKey: newIdempotencyKey("note"),
+    body: { resource },
+  });
 }
 
 // --- emergency (break-glass) ---------------------------------------------
