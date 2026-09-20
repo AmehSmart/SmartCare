@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Sidebar from "../../components/layout/Sidebar";
 import Topbar from "../../components/layout/Topbar";
 import Icon from "../../components/ui/Icon";
@@ -10,19 +10,9 @@ import { useAuth } from "../../context/useAuth";
 import { getPatients } from "../../services/api/patientApi";
 import "./PatientWorklist.css";
 
-// Demo patients for one-click "scan" access (their record IDs). In production a
-// clinician scans a wristband / enters the hospital number instead.
-const DEMO_PATIENTS = [
-    { id: "30000000-0000-4000-8000-000000000001", name: "Amina Musa" },
-    { id: "30000000-0000-4000-8000-000000000002", name: "Chidi Okafor" },
-    { id: "30000000-0000-4000-8000-000000000003", name: "Fatima Bello" },
-];
-
 export default function PatientWorklist() {
     const { user } = useAuth();
-    const navigate = useNavigate();
     const isRecordsClerk = String(user?.role || "").toLowerCase().includes("records");
-    const [lookupId, setLookupId] = useState("");
     const [patients, setPatients] = useState([]);
     const [query, setQuery] = useState("");
     const [scopeOnly, setScopeOnly] = useState(false);
@@ -81,26 +71,6 @@ export default function PatientWorklist() {
                         </div>
                         <Pill tone="blue"><Icon name="shield" /> {user?.ward || "All Units"} · {user?.shift || "All Shifts"}</Pill>
                     </div>
-
-                    <section className="worklist-access-card">
-                        <div className="worklist-access-copy">
-                            <h2><Icon name="search" /> Access an incoming patient</h2>
-                            <p>Scan or enter the record ID of a patient not on your worklist - a transfer, or someone outside your ward. In scope opens the chart; out of scope offers audited emergency (break-glass) access.</p>
-                        </div>
-                        <form
-                            className="worklist-access-form"
-                            onSubmit={(event) => { event.preventDefault(); if (lookupId.trim()) navigate(`/patients/${lookupId.trim()}`); }}
-                        >
-                            <input value={lookupId} onChange={(event) => setLookupId(event.target.value)} placeholder="Patient record ID" aria-label="Patient record ID" />
-                            <button type="submit" disabled={!lookupId.trim()}>Open record</button>
-                        </form>
-                        <div className="worklist-access-quick">
-                            <span>Quick access (demo):</span>
-                            {DEMO_PATIENTS.map((patient) => (
-                                <button key={patient.id} type="button" onClick={() => navigate(`/patients/${patient.id}`)}>{patient.name}</button>
-                            ))}
-                        </div>
-                    </section>
 
                     <section className="worklist-layout">
                         <aside className="worklist-filters" aria-label="Patient filters">

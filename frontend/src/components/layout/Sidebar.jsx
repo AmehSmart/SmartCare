@@ -5,6 +5,7 @@ import Avatar from "../ui/Avatar";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/useAuth";
 import { hasPermission } from "../../services/api/roleService";
+import { getNotifications } from "../../services/api/notificationApi";
 
 const ROUTE_MAP = {
     dashboard: "/dashboard",
@@ -21,9 +22,27 @@ const ROUTE_MAP = {
 
 export default function Sidebar({ navItems, user }) {
     const [collapsed, setCollapsed] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
     const { logout, user: authenticatedUser } = useAuth();
     const displayUser = authenticatedUser || user;
+
+    // Poll unread notifications so the Notifications nav item lights up when there
+    // is something new to review.
+    useEffect(() => {
+        if (!authenticatedUser) return undefined;
+        let mounted = true;
+        const refresh = () => {
+            getNotifications()
+                .then((items) => { if (mounted) setUnreadCount(items.filter((i) => !i.read).length); })
+                .catch(() => { /* keep last known count */ });
+        };
+        refresh();
+        const id = setInterval(refresh, 20000);
+        const onFocus = () => refresh();
+        window.addEventListener("focus", onFocus);
+        return () => { mounted = false; clearInterval(id); window.removeEventListener("focus", onFocus); };
+    }, [authenticatedUser]);
 
     useEffect(() => {
         const handleEscape = (event) => {
@@ -101,8 +120,18 @@ export default function Sidebar({ navItems, user }) {
                                     }
                                     title={item.label}
                                 >
-                                    <Icon name={item.icon} />
-                                    <span className="dash-nav__label">{item.label}</span>
+                                    <span className="dash-nav__icon-wrap">
+                                        <Icon name={item.icon} />
+                                        {item.key === "notifications" && unreadCount > 0 && (
+                                            <span className="dash-nav__badge" aria-hidden="true">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                                        )}
+                                    </span>
+                                    <span className="dash-nav__label">
+                                        {item.label}
+                                        {item.key === "notifications" && unreadCount > 0 && (
+                                            <span className="dash-nav__count" aria-label={`${unreadCount} unread`}>{unreadCount > 9 ? "9+" : unreadCount}</span>
+                                        )}
+                                    </span>
                                 </NavLink>
                             );
                         })}

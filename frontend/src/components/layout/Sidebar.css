@@ -198,3 +198,30 @@
   .sidebar-overlay { display: block; }
   .sidebar-mobile-trigger { display: flex; }
 }
+/* Notifications unread badge */
+.dash-nav__icon-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.dash-nav__badge {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-danger, #B3261E);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+.dash-nav__count {
+  margin-left: auto;
+  background: var(--color-danger, #B3261E);
+  color: #fff;
+  border-radius: var(--radius-full, 9999px);
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.dash-nav__item .dash-nav__label { display: inline-flex; align-items: center; gap: 8px; flex: 1; }

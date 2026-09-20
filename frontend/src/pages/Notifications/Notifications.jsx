@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Notifications.css";
 import Sidebar from "../../components/layout/Sidebar";
 import Topbar from "../../components/layout/Topbar";
@@ -23,8 +24,18 @@ function formatWhen(value) {
     return date.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+// Incoming patients to review. In production these arrive from the ED / admissions
+// feed; here they are the seeded demo patients, opened by record ID (a scan).
+const INCOMING_PATIENTS = [
+    { id: "30000000-0000-4000-8000-000000000001", name: "Amina Musa", note: "ED arrival - sickle-cell crisis" },
+    { id: "30000000-0000-4000-8000-000000000002", name: "Chidi Okafor", note: "Transfer - Ward A" },
+    { id: "30000000-0000-4000-8000-000000000003", name: "Fatima Bello", note: "Ward A - recurrent crises" },
+];
+
 export default function Notifications() {
     const { user } = useAuth();
+    const navigate = useNavigate();
+    const [lookupId, setLookupId] = useState("");
     const displayUser = user || CURRENT_USER;
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -80,6 +91,32 @@ export default function Notifications() {
                             </div>
                         )}
                     </div>
+
+                    <section className="incoming-card">
+                        <div className="incoming-card__head">
+                            <h2><Icon name="bell" /> Incoming patients to review</h2>
+                            <p>Patients arriving or transferred in. Open a record to review it - if they are outside your scope you will be offered audited emergency (break-glass) access.</p>
+                        </div>
+                        <div className="incoming-list">
+                            {INCOMING_PATIENTS.map((patient) => (
+                                <button key={patient.id} type="button" className="incoming-item" onClick={() => navigate(`/patients/${patient.id}`)}>
+                                    <span className="incoming-item__dot" aria-hidden="true" />
+                                    <span className="incoming-item__body">
+                                        <strong>{patient.name}</strong>
+                                        <small>{patient.note}</small>
+                                    </span>
+                                    <Icon name="chevron" />
+                                </button>
+                            ))}
+                        </div>
+                        <form
+                            className="incoming-lookup"
+                            onSubmit={(event) => { event.preventDefault(); if (lookupId.trim()) navigate(`/patients/${lookupId.trim()}`); }}
+                        >
+                            <input value={lookupId} onChange={(event) => setLookupId(event.target.value)} placeholder="Or scan / enter a patient record ID" aria-label="Patient record ID" />
+                            <button type="submit" disabled={!lookupId.trim()}>Open record</button>
+                        </form>
+                    </section>
 
                     <div className="notifications-list" aria-live="polite">
                         {loading && <p className="notifications-state">Loading notifications...</p>}
