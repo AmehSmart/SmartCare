@@ -5,3 +5,57 @@
 @media(max-width:900px){.worklist-content{padding:24px}.worklist-layout{grid-template-columns:1fr}.worklist-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.worklist-check{margin-top:0;align-items:center}.worklist-filter-note{grid-column:1/-1;margin-top:0;padding-top:16px}}
 @media(max-width:768px){.worklist-page{grid-template-columns:1fr}}
 @media(max-width:600px){.worklist-content{padding:20px 16px}.worklist-heading{display:grid;gap:14px}.worklist-heading .pill{justify-self:start}.worklist-filters{display:block}.worklist-check{margin-top:18px}.worklist-filter-note{margin-top:20px}.patient-result{grid-template-columns:40px minmax(0,1fr) 16px;gap:10px;padding:16px}.patient-result__avatar{width:40px;height:40px}.patient-result__meta{grid-column:2;justify-items:start}.patient-result>svg{grid-column:3;grid-row:1 / span 2}.worklist-results__header{padding:16px}}
+/* Access an incoming patient */
+.worklist-access-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: 20px;
+  margin-bottom: 20px;
+  display: grid;
+  gap: 14px;
+}
+.worklist-access-copy h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-h2);
+  margin: 0 0 4px;
+}
+.worklist-access-copy h2 svg { width: 18px; height: 18px; color: var(--color-action); }
+.worklist-access-copy p { color: var(--color-text-2); font-size: 14px; margin: 0; }
+.worklist-access-form { display: flex; gap: 10px; flex-wrap: wrap; }
+.worklist-access-form input {
+  flex: 1;
+  min-width: 220px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.worklist-access-form input:focus { outline: none; border-color: var(--color-action); }
+.worklist-access-form button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-action);
+  color: #fff;
+  font-weight: 700;
+}
+.worklist-access-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+.worklist-access-quick { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.worklist-access-quick span { color: var(--color-text-2); font-size: 13px; }
+.worklist-access-quick button {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-gray-50);
+  color: var(--color-text);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.worklist-access-quick button:hover { border-color: var(--color-action); color: var(--color-action); }
