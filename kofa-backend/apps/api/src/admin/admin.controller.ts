@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
 import { RoleSchema } from '@kofa/contracts';
 import { z } from 'zod';
 import { Principal } from '../auth/principal.decorator.js';
@@ -21,9 +21,44 @@ const PatientAssignmentSchema = z.object({
   endsAt: z.coerce.date().optional(),
 });
 
+const InvitationCreateSchema = z.object({
+  expiresAt: z.coerce.date().optional(),
+});
+const PatientCreateSchema = z.object({
+  firstName: z.string().min(1).max(80),
+  middleName: z.string().max(80).optional(),
+  lastName: z.string().min(1).max(80),
+  birthDate: z.coerce.date().optional(),
+  departmentId: z.uuid().optional(),
+  wardId: z.uuid().optional(),
+  status: z.enum(['ACTIVE', 'DISCHARGED', 'INACTIVE']).default('ACTIVE'),
+  assignedStaffId: z.uuid().optional(),
+});
+
 @Controller('v1/admin')
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(@Inject(AdminService) private readonly admin: AdminService) { }
+
+  @Get('invitations')
+  listInvitations(@Principal() principal: RequestPrincipal): Promise<unknown> {
+    return this.admin.listInvitations(principal);
+  }
+
+  @Post('invitations')
+  createInvitation(
+    @Principal() principal: RequestPrincipal,
+    @Body(new ZodValidationPipe(InvitationCreateSchema)) body: z.infer<typeof InvitationCreateSchema>,
+  ): Promise<unknown> {
+    return this.admin.createInvitation(principal, body);
+  }
+
+  @Patch('invitations/:id/revoke')
+  revokeInvitation(
+    @Principal() principal: RequestPrincipal,
+    @Param('id', UuidValidationPipe) id: string,
+  ): Promise<unknown> {
+    return this.admin.revokeInvitation(principal, id);
+  }
 
   @Get('roster')
   roster(@Principal() principal: RequestPrincipal): Promise<unknown> {
@@ -33,9 +68,17 @@ export class AdminController {
   @Get('patients')
   patients(
     @Principal() principal: RequestPrincipal,
-    @Param() _params: Record<string, never>,
+    @Query('query') query?: string,
   ): Promise<unknown> {
-    return this.admin.patients(principal);
+    return this.admin.patients(principal, query);
+  }
+
+  @Post('patients')
+  createPatient(
+    @Principal() principal: RequestPrincipal,
+    @Body(new ZodValidationPipe(PatientCreateSchema)) body: z.infer<typeof PatientCreateSchema>,
+  ): Promise<unknown> {
+    return this.admin.createPatient(principal, body);
   }
 
   @Get('patients/:id')
@@ -84,6 +127,11 @@ export class AdminController {
   @Get('assignment-staff')
   assignmentStaff(@Principal() principal: RequestPrincipal): Promise<unknown> {
     return this.admin.assignmentStaff(principal);
+  }
+
+  @Get('departments')
+  departments(@Principal() principal: RequestPrincipal): Promise<unknown> {
+    return this.admin.departments(principal);
   }
 
   @Post('assignments')

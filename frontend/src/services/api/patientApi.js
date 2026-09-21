@@ -89,7 +89,7 @@ export async function getPatientById(id, user) {
         id: patient.id, patientNumber: patient.fhirId, initials: patient.displayName?.split(/\s+/).map((name) => name[0]).join("").slice(0, 2), name: patient.displayName,
         age: patient.birthDate ? Math.floor((Date.now() - new Date(patient.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null,
         gender: "-", ward: patient.currentWard?.name || "-", department: patient.department?.name || "-", status: patient.status,
-        admittedAt: patient.admittedAt, dischargedAt: patient.dischargedAt, assignments: patient.assignments || [], demographics: {}, diagnosis: [], medications: [], labs: [], sensitiveFields: {}, policyFields: [],
+        admittedAt: patient.admittedAt, dischargedAt: patient.dischargedAt, assignments: patient.assignments || [], demographics: { dob: patient.birthDate || "" }, diagnosis: [], medications: [], labs: [], sensitiveFields: {}, policyFields: [],
       };
     }
     return backendGetPatientById(id, user);

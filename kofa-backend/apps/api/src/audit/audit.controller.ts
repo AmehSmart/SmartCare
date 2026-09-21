@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
@@ -18,9 +19,9 @@ import { UuidValidationPipe } from '../common/uuid-validation.pipe.js';
 @Controller('v1/audit')
 export class AuditProxyController {
   constructor(
-    private readonly context: ContextService,
-    private readonly audit: AuditClient,
-  ) {}
+    @Inject(ContextService) private readonly context: ContextService,
+    @Inject(AuditClient) private readonly audit: AuditClient,
+  ) { }
 
   @Get('events')
   async events(
@@ -28,7 +29,7 @@ export class AuditProxyController {
     @Query('limit') limit?: string,
     @Query('cursor') cursor?: string,
   ): Promise<unknown> {
-    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER']);
+    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER', 'ADMIN']);
     const params = new URLSearchParams();
     if (limit) params.set('limit', limit);
     if (cursor) params.set('cursor', cursor);
@@ -37,19 +38,19 @@ export class AuditProxyController {
 
   @Get('flags')
   async flags(@Principal() principal: RequestPrincipal): Promise<unknown> {
-    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER']);
+    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER', 'ADMIN']);
     return this.audit.listFlags(actor.facilityId!);
   }
 
   @Post('verify')
   async verify(@Principal() principal: RequestPrincipal): Promise<unknown> {
-    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER']);
+    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER', 'ADMIN']);
     return this.audit.verify(actor.userId);
   }
 
   @Get('checkpoints/latest')
   async checkpoint(@Principal() principal: RequestPrincipal): Promise<unknown> {
-    await this.context.requireRole(principal, ['AUDIT_OFFICER']);
+    await this.context.requireRole(principal, ['AUDIT_OFFICER', 'ADMIN']);
     return this.audit.latestCheckpoint();
   }
 
@@ -59,7 +60,7 @@ export class AuditProxyController {
     @Param('id', UuidValidationPipe) id: string,
     @Body() body: unknown,
   ): Promise<unknown> {
-    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER']);
+    const actor = await this.context.requireRole(principal, ['AUDIT_OFFICER', 'ADMIN']);
     const input = z
       .object({
         status: z.enum(['REVIEWED', 'DISMISSED', 'ESCALATED']),

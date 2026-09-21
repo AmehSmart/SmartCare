@@ -15,6 +15,10 @@ export default function LoginForm({ onSubmit, submitting = false, error: serverE
             setError(backendMode ? "Enter both your email and password." : "Enter both your Staff ID and PIN.");
             return;
         }
+        if (backendMode && pin.length < 6) {
+            setError("Password or PIN must be at least 6 characters.");
+            return;
+        }
         setError("");
         onSubmit?.({ staffId: staffId.trim(), pin: pin.trim() });
     };

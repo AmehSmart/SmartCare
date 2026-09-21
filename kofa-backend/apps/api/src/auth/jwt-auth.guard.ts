@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 import { jwtVerify } from 'jose';
@@ -10,7 +10,7 @@ import { PUBLIC_ROUTE } from './public.decorator.js';
 export class JwtAuthGuard implements CanActivate {
   private readonly secret = new TextEncoder().encode(loadApiConfig().AUTH_JWT_SECRET);
 
-  constructor(private readonly reflector: Reflector) {}
+  constructor(@Inject(Reflector) private readonly reflector: Reflector) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     if (

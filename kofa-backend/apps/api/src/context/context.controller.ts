@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post } from '@nestjs/common';
 import { DutyContextSelectionSchema } from '@kofa/contracts';
 import { AuditClient } from '../audit/audit.client.js';
 import { Principal } from '../auth/principal.decorator.js';
@@ -9,9 +9,9 @@ import { ContextService } from './context.service.js';
 @Controller('v1/session')
 export class ContextController {
   constructor(
-    private readonly context: ContextService,
-    private readonly audit: AuditClient,
-  ) {}
+    @Inject(ContextService) private readonly context: ContextService,
+    @Inject(AuditClient) private readonly audit: AuditClient,
+  ) { }
 
   @Get('assignments')
   assignments(@Principal() principal: RequestPrincipal): Promise<unknown[]> {

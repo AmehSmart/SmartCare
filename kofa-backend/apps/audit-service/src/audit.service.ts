@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditAppendSchema, type AuditAppend, type AuditReceipt } from '@kofa/contracts';
 import {
   calculateChainHash,
@@ -20,7 +20,7 @@ export class AuditService {
     Buffer.from(loadAuditConfig().AUDIT_CHECKPOINT_SIGNING_KEY, 'base64'),
   );
 
-  constructor(private readonly database: AuditDatabase) {}
+  constructor(@Inject(AuditDatabase) private readonly database: AuditDatabase) { }
 
   async append(raw: unknown): Promise<AuditReceipt> {
     const input = AuditAppendSchema.parse(raw);

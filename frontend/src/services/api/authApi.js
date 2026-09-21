@@ -1,7 +1,7 @@
 import { STAFF_PROFILES } from "./mockData";
 import { getRolePermissions } from "./roleService";
 import { isBackendEnabled } from "./config";
-import { loginStaff as backendLoginStaff } from "./backendAdapter";
+import { loginStaff as backendLoginStaff, registerAdministrator as backendRegisterAdministrator, registerStaff as backendRegisterStaff } from "./backendAdapter";
 
 const PROFILE_OVERRIDES_KEY = "smartcare-profile-overrides";
 const LEGACY_PROFILE_OVERRIDES_KEY = "kofa-profile-overrides";
@@ -81,16 +81,25 @@ export async function updateStaffProfile(staffId, updates) {
   return toUserProfile(profile);
 }
 
-export async function registerStaff({ staffId, name, department, ward, pin }) {
+export async function registerStaff({ email, staffId, name, department, ward, pin }) {
+  if (isBackendEnabled()) {
+    return backendRegisterStaff({ email, staffId, name, department, ward, pin });
+  }
+
   await new Promise((resolve) => setTimeout(resolve, 350));
+  const cleanEmail = String(email ?? "").trim().toLowerCase();
   const cleanStaffId = String(staffId ?? "").trim().toUpperCase();
   const cleanName = String(name ?? "").trim();
   const cleanDepartment = String(department ?? "").trim();
   const cleanWard = String(ward ?? "").trim();
   const cleanPin = String(pin ?? "");
 
-  if (!cleanStaffId || !cleanName || !cleanDepartment || !cleanWard || !cleanPin) {
+  if (!cleanEmail || !cleanStaffId || !cleanName || !cleanDepartment || !cleanWard || !cleanPin) {
     throw new Error("Complete all required registration fields.");
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    throw new Error("Enter a valid email address.");
   }
 
   if (STAFF_PROFILES.some((member) => member.staffId.toUpperCase() === cleanStaffId)) {
@@ -103,6 +112,7 @@ export async function registerStaff({ staffId, name, department, ward, pin }) {
 
   const initials = cleanName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   STAFF_PROFILES.push({
+    email: cleanEmail,
     staffId: cleanStaffId,
     roleId: "nurse",
     pin: cleanPin,
@@ -116,10 +126,14 @@ export async function registerStaff({ staffId, name, department, ward, pin }) {
     accessLevel: "Pending role assignment",
   });
 
-  return { staffId: cleanStaffId, status: "pending_activation" };
+  return { email: cleanEmail, staffId: cleanStaffId, status: "pending_activation" };
 }
 
 export async function registerAdministrator({ email, password, invitationCode }) {
+  if (isBackendEnabled()) {
+    return backendRegisterAdministrator({ email, password, invitationCode });
+  }
+
   await new Promise((resolve) => setTimeout(resolve, 350));
 
   const cleanEmail = String(email ?? "").trim();

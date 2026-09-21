@@ -5,7 +5,7 @@ import Icon from "../../components/ui/Icon";
 import Button from "../../components/ui/Button";
 import { registerAdministrator, registerStaff } from "../../services/api/authApi";
 
-const initialForm = { staffId: "", name: "", department: "", ward: "", pin: "", confirmPin: "" };
+const initialForm = { email: "", staffId: "", name: "", department: "", ward: "", pin: "", confirmPin: "" };
 const adminInitialForm = { email: "", password: "", confirmPassword: "", invitationCode: "" };
 const STAFF_ID_PATTERN = /^[A-Z]{2,4}\d{3,5}$/i;
 
@@ -67,10 +67,17 @@ function StaffRegistration() {
 
     const validate = () => {
         const nextErrors = {};
+        const email = form.email.trim();
         const staffId = form.staffId.trim();
         const name = form.name.trim();
         const department = form.department.trim();
         const ward = form.ward.trim();
+
+        if (!email) {
+            nextErrors.email = "Email is required.";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            nextErrors.email = "Enter a valid email address.";
+        }
 
         if (!staffId) {
             nextErrors.staffId = "Staff ID is required.";
@@ -100,6 +107,7 @@ function StaffRegistration() {
 
         try {
             await registerStaff({
+                email: form.email,
                 staffId: form.staffId,
                 name: form.name,
                 department: form.department,
@@ -152,6 +160,7 @@ function StaffRegistration() {
                         <section className="registration-section">
                             <div className="registration-section__header"><h2>Account information</h2></div>
                             <div className="registration-grid">
+                                <Field label="Email" value={form.email} onChange={(value) => setField("email", value)} error={errors.email} placeholder="you@hospital.org" autoComplete="email" />
                                 <Field label="Full name" value={form.name} onChange={(value) => setField("name", value)} error={errors.name} placeholder="Your full name" autoComplete="name" />
                                 <Field label="Staff ID" value={form.staffId} onChange={(value) => setField("staffId", value.toUpperCase())} error={errors.staffId} placeholder="e.g. N8002" autoComplete="off" />
                             </div>

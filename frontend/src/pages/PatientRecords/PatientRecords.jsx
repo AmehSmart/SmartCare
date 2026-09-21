@@ -62,6 +62,7 @@ export default function PatientRecords() {
     const [selectedStaffId, setSelectedStaffId] = useState("");
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState("");
+    const [actionError, setActionError] = useState("");
     const [availableStaff, setAvailableStaff] = useState([]);
 
     useEffect(() => {
@@ -155,38 +156,50 @@ export default function PatientRecords() {
 
     const handleAssign = async () => {
         if (!patient || !selectedStaffId) return;
-        if (currentUser.backendRole === "ADMIN" && isBackendEnabled()) {
-            await assignAdminPatient(patient.id, selectedStaffId);
-            const selected = eligibleStaff.find((staff) => staff.staffId === selectedStaffId);
-            setAssignments((items) => [...items, { id: `pending-${selectedStaffId}`, staffId: selectedStaffId, staffName: selected?.name, assignmentType: "Care team", ward: patient.tag, status: "Active" }]);
+        setActionError("");
+        try {
+            if (currentUser.backendRole === "ADMIN" && isBackendEnabled()) {
+                if (currentAssignment && currentAssignment.staffId !== selectedStaffId) {
+                    await removeAdminPatientAssignment(currentAssignment.id);
+                }
+                await assignAdminPatient(patient.id, selectedStaffId);
+                const selected = eligibleStaff.find((staff) => staff.staffId === selectedStaffId);
+                setAssignments([{ id: `pending-${selectedStaffId}`, staffId: selectedStaffId, staffName: selected?.name, assignmentType: "Care team", ward: patient.tag, status: "Active" }]);
+                setAssignmentModalOpen(false);
+                return;
+            }
+            assignPatientToStaff({ patientId: patient.id, staffId: selectedStaffId, assignmentType, ward: patient.tag, status: "Active" });
+            setAssignments(getPatientAssignmentsForPatient(patient.id));
             setAssignmentModalOpen(false);
-            return;
+        } catch (error) {
+            setActionError(error?.message || "Unable to assign patient to staff.");
         }
-        assignPatientToStaff({
-            patientId: patient.id,
-            staffId: selectedStaffId,
-            assignmentType,
-            ward: patient.tag,
-            status: "Active",
-        });
-        setAssignments(getPatientAssignmentsForPatient(patient.id));
-        setAssignmentModalOpen(false);
     };
 
     const handleRemoveAssignment = async () => {
         if (!currentAssignment) return;
         const confirmed = window.confirm("Remove this assignment from the patient care team?");
         if (!confirmed) return;
-        if (currentUser.backendRole === "ADMIN" && isBackendEnabled()) {
-            await removeAdminPatientAssignment(currentAssignment.id);
-            setAssignments((items) => items.map((item) => item.id === currentAssignment.id ? { ...item, status: "Removed" } : item));
-        } else { removePatientAssignment(currentAssignment.id); setAssignments(getPatientAssignmentsForPatient(patient.id)); }
+        setActionError("");
+        try {
+            if (currentUser.backendRole === "ADMIN" && isBackendEnabled()) {
+                await removeAdminPatientAssignment(currentAssignment.id);
+                setAssignments((items) => items.map((item) => item.id === currentAssignment.id ? { ...item, status: "Removed" } : item));
+            } else { removePatientAssignment(currentAssignment.id); setAssignments(getPatientAssignmentsForPatient(patient.id)); }
+        } catch (error) {
+            setActionError(error?.message || "Unable to remove patient assignment.");
+        }
     };
 
     const handleStatusChange = async (status) => {
         if (!patient || currentUser.backendRole !== "ADMIN" || !isBackendEnabled()) return;
-        const updated = await setAdminPatientStatus(patient.id, status);
-        setPatient((current) => current ? { ...current, status: updated.status } : current);
+        setActionError("");
+        try {
+            const updated = await setAdminPatientStatus(patient.id, status);
+            setPatient((current) => current ? { ...current, status: updated.status } : current);
+        } catch (error) {
+            setActionError(error?.message || "Unable to update patient status.");
+        }
     };
 
     const renderTab = () => {
@@ -319,6 +332,7 @@ export default function PatientRecords() {
 
                     <div className="pr-card">
                         <PatientHeader patient={patient} />
+                        {actionError && <p className="registration-error" role="alert"><Icon name="alert" /> {actionError}</p>}
                         {currentUser.backendRole === "ADMIN" && isBackendEnabled() && (
                             <div className="pr-assignment-box" style={{ margin: "0 24px 16px" }}>
                                 <span className="pr-assignment-label">Administrative patient status</span>

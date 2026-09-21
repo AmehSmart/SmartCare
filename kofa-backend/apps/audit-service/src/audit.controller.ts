@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  Inject,
   Param,
   Patch,
   Post,
@@ -16,7 +17,7 @@ import { InternalAuthGuard } from './internal-auth.guard.js';
 @Controller('internal/v1/audit')
 @UseGuards(InternalAuthGuard)
 export class AuditController {
-  constructor(private readonly audit: AuditService) {}
+  constructor(@Inject(AuditService) private readonly audit: AuditService) { }
 
   @Post('events')
   append(@Body() body: unknown): Promise<unknown> {

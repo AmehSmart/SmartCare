@@ -2,6 +2,7 @@ import {
   Catch,
   HttpException,
   HttpStatus,
+  Logger,
   type ArgumentsHost,
   type ExceptionFilter,
 } from '@nestjs/common';
@@ -10,6 +11,8 @@ import { ZodError } from 'zod';
 
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(ApiExceptionFilter.name);
+
   catch(error: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
     const response = http.getResponse<FastifyReply>();
@@ -32,6 +35,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
               ? 'Internal server error'
               : 'Request failed';
     const code = isRecord(value) && typeof value.code === 'string' ? value.code : `HTTP_${status}`;
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(error instanceof Error ? error.stack ?? error.message : String(error));
+    }
     void response.status(status).send({
       statusCode: status,
       code,

@@ -103,6 +103,28 @@ export function logout() {
   clearAccessToken();
 }
 
+export async function registerAdministrator({ email, password, invitationCode }) {
+  const auth = await apiFetch("/v1/auth/register-admin", {
+    method: "POST",
+    auth: false,
+    body: { email, password, invitationCode },
+  });
+
+  if (auth?.accessToken) {
+    setAccessToken(auth.accessToken);
+  }
+
+  return auth;
+}
+
+export async function registerStaff({ email, staffId, name, department, ward, pin }) {
+  return apiFetch("/v1/auth/register-staff", {
+    method: "POST",
+    auth: false,
+    body: { email, staffId, name, department, ward, pin },
+  });
+}
+
 // --- patients -------------------------------------------------------------
 
 function mapPatientCard(item) {
@@ -474,13 +496,19 @@ export async function getAdminRoster() {
   });
 }
 
-export async function getAdminPatients() {
-  const data = await apiFetch("/v1/admin/patients");
+export async function getAdminPatients(query) {
+  const suffix = query?.trim() ? `?query=${encodeURIComponent(query.trim())}` : "";
+  const data = await apiFetch(`/v1/admin/patients${suffix}`);
   return (data?.items || []).map(mapPatientCard);
+}
+
+export async function createAdminPatient(input) {
+  return apiFetch("/v1/admin/patients", { method: "POST", body: input });
 }
 
 export async function getAdminPatient(id) { return apiFetch(`/v1/admin/patients/${id}`); }
 export async function getAssignmentStaff() { return apiFetch("/v1/admin/assignment-staff"); }
+export async function getAdminDepartments() { return apiFetch("/v1/admin/departments"); }
 export async function assignAdminPatient(patientId, userId) { return apiFetch(`/v1/admin/patients/${patientId}/assignments`, { method: "POST", body: { userId } }); }
 export async function removeAdminPatientAssignment(id) { return apiFetch(`/v1/admin/patient-assignments/${id}`, { method: "DELETE" }); }
 export async function setAdminPatientStatus(id, status) { return apiFetch(`/v1/admin/patients/${id}/status`, { method: "PATCH", body: { status } }); }

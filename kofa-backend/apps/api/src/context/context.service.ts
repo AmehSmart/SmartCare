@@ -1,5 +1,6 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -21,7 +22,7 @@ export type ActiveActor = {
 
 @Injectable()
 export class ContextService {
-  constructor(private readonly database: ClinicalDatabase) {}
+  constructor(@Inject(ClinicalDatabase) private readonly database: ClinicalDatabase) { }
 
   async actor(principal: RequestPrincipal): Promise<ActiveActor> {
     const user = await this.database.userProfile.findUnique({

@@ -12,8 +12,8 @@
   "scripts": {
     "build": "pnpm db:generate && tsc -b",
     "clean": "node scripts/clean.mjs",
-    "dev:api": "tsx --env-file=.env watch --tsconfig apps/api/tsconfig.json apps/api/src/main.ts",
-    "dev:audit": "tsx --env-file=.env watch apps/audit-service/src/main.ts",
+    "dev:api": "tsx --env-file=.env --watch --tsconfig apps/api/tsconfig.json apps/api/src/main.ts",
+    "dev:audit": "tsx --env-file=.env --watch --tsconfig apps/audit-service/tsconfig.json apps/audit-service/src/main.ts",
     "start:api": "node dist/apps/api/main.js",
     "start:audit": "node dist/apps/audit-service/main.js",
     "lint": "eslint .",

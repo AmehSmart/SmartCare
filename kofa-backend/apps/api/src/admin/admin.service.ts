@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Role } from '@kofa/contracts';
 import { AuditClient } from '../audit/audit.client.js';
 import type { RequestPrincipal } from '../auth/auth.types.js';
+import { generateAdminInvitationCode, hashInvitationCode } from '../auth/auth.service.js';
 import { ClinicalService } from '../clinical/clinical.service.js';
 import { ContextService } from '../context/context.service.js';
 import { ClinicalDatabase } from '../database.service.js';
@@ -10,12 +11,12 @@ import { TotpService } from '../security/totp.service.js';
 @Injectable()
 export class AdminService {
   constructor(
-    private readonly database: ClinicalDatabase,
-    private readonly context: ContextService,
-    private readonly clinical: ClinicalService,
-    private readonly audit: AuditClient,
-    private readonly totp: TotpService,
-  ) {}
+    @Inject(ClinicalDatabase) private readonly database: ClinicalDatabase,
+    @Inject(ContextService) private readonly context: ContextService,
+    @Inject(ClinicalService) private readonly clinical: ClinicalService,
+    @Inject(AuditClient) private readonly audit: AuditClient,
+    @Inject(TotpService) private readonly totp: TotpService,
+  ) { }
 
   async roster(principal: RequestPrincipal): Promise<unknown> {
     const actor = await this.context.requireRole(principal, ['ADMIN']);
@@ -64,10 +65,14 @@ export class AdminService {
     };
   }
 
-  async patients(principal: RequestPrincipal): Promise<unknown> {
+  async patients(principal: RequestPrincipal, query?: string): Promise<unknown> {
     const actor = await this.context.requireRole(principal, ['ADMIN']);
+    const normalizedQuery = query?.trim();
     const items = await this.database.patient.findMany({
-      where: { facilityId: actor.facilityId },
+      where: {
+        facilityId: actor.facilityId,
+        ...(normalizedQuery ? { OR: [{ displayName: { contains: normalizedQuery, mode: 'insensitive' } }, { fhirId: { contains: normalizedQuery, mode: 'insensitive' } }] } : {}),
+      },
       include: {
         currentWard: { select: { id: true, name: true, code: true } },
         department: { select: { id: true, name: true, code: true } },
@@ -79,6 +84,78 @@ export class AdminService {
       orderBy: { displayName: 'asc' },
     });
     return { items: items.map((patient) => this.patientView(patient)) };
+  }
+
+  async createPatient(
+    principal: RequestPrincipal,
+    input: {
+      firstName: string;
+      middleName?: string;
+      lastName: string;
+      birthDate?: Date;
+      departmentId?: string;
+      wardId?: string;
+      status: 'ACTIVE' | 'DISCHARGED' | 'INACTIVE';
+      assignedStaffId?: string;
+    },
+  ): Promise<unknown> {
+    const actor = await this.context.requireRole(principal, ['ADMIN']);
+    if (!actor.facilityId) throw new BadRequestException('Administrator is not linked to a facility');
+    const displayName = [input.firstName, input.middleName, input.lastName].filter(Boolean).join(' ').trim();
+    const now = new Date();
+    const duplicate = await this.database.patient.findFirst({
+      where: {
+        facilityId: actor.facilityId,
+        displayName: { equals: displayName, mode: 'insensitive' },
+        ...(input.birthDate ? { birthDate: input.birthDate } : {}),
+      },
+      select: { id: true, displayName: true, fhirId: true, birthDate: true },
+    });
+    if (duplicate) throw new ConflictException({ message: 'Possible existing patient found', patient: duplicate });
+
+    if (input.departmentId) {
+      const department = await this.database.department.findFirst({ where: { id: input.departmentId, facilityId: actor.facilityId, active: true } });
+      if (!department) throw new NotFoundException('Department not found in this facility');
+    }
+    if (input.wardId) {
+      const ward = await this.database.ward.findFirst({ where: { id: input.wardId, facilityId: actor.facilityId, active: true } });
+      if (!ward) throw new NotFoundException('Ward not found in this facility');
+    }
+
+    const created = await this.database.$transaction(async (transaction) => {
+      const patient = await transaction.patient.create({
+        data: {
+          fhirId: await this.nextMrn(transaction),
+          facilityId: actor.facilityId as string,
+          displayName,
+          ...(input.birthDate ? { birthDate: input.birthDate } : {}),
+          ...(input.departmentId ? { departmentId: input.departmentId } : {}),
+          ...(input.wardId ? { currentWardId: input.wardId } : {}),
+          status: input.status,
+          active: input.status === 'ACTIVE',
+          ...(input.status === 'DISCHARGED' ? { dischargedAt: now } : {}),
+        },
+      });
+      if (input.assignedStaffId) {
+        const staff = await transaction.userProfile.findFirst({
+          where: { id: input.assignedStaffId, facilityId: actor.facilityId, active: true, assignments: { some: { active: true, startsAt: { lte: now }, endsAt: { gt: now }, role: { in: ['DOCTOR', 'LOCUM_DOCTOR', 'NURSE'] } } } },
+          select: { id: true },
+        });
+        if (!staff) throw new BadRequestException('Selected staff member has no active eligible clinical assignment');
+        await transaction.caseAttachment.create({ data: { patientId: patient.id, userId: staff.id, startsAt: now } });
+      }
+      return patient;
+    });
+    await this.audit.append(this.clinical.auditInput(actor, 'ADMIN', 'CREATE_PATIENT', 'GRANT', created.id, { mrn: created.fhirId }, `patient-create:${created.id}`, { purposeOfUse: 'OPERATIONS' }));
+    return this.patient(principal, created.id);
+  }
+
+  private async nextMrn(transaction: any): Promise<string> {
+    for (; ;) {
+      const candidate = `MRN-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+      const exists = await transaction.patient.findUnique({ where: { fhirId: candidate }, select: { id: true } });
+      if (!exists) return candidate;
+    }
   }
 
   async patient(principal: RequestPrincipal, patientId: string): Promise<unknown> {
@@ -162,6 +239,16 @@ export class AdminService {
     return { items };
   }
 
+  async departments(principal: RequestPrincipal): Promise<unknown> {
+    const actor = await this.context.requireRole(principal, ['ADMIN']);
+    const items = await this.database.department.findMany({
+      where: { facilityId: actor.facilityId, active: true },
+      include: { wards: { where: { active: true }, select: { id: true, name: true, code: true } } },
+      orderBy: { name: 'asc' },
+    });
+    return { items };
+  }
+
   private patientView(patient: any): Record<string, unknown> {
     return {
       id: patient.id, fhirId: patient.fhirId, displayName: patient.displayName, birthDate: patient.birthDate,
@@ -205,6 +292,66 @@ export class AdminService {
     return assignment;
   }
 
+  async listInvitations(principal: RequestPrincipal): Promise<unknown> {
+    const actor = await this.context.requireRole(principal, ['ADMIN']);
+    const items = await this.database.adminInvitation.findMany({
+      where: { createdBy: { facilityId: actor.facilityId } },
+      include: {
+        createdBy: { select: { id: true, displayName: true, email: true } },
+        usedBy: { select: { id: true, displayName: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        createdAt: item.createdAt,
+        expiresAt: item.expiresAt,
+        revokedAt: item.revokedAt,
+        usedAt: item.usedAt,
+        usedBy: item.usedBy,
+        createdBy: item.createdBy,
+        status: this.invitationStatus(item),
+      })),
+    };
+  }
+
+  async createInvitation(
+    principal: RequestPrincipal,
+    input: { expiresAt?: Date } = {},
+  ): Promise<unknown> {
+    const actor = await this.context.requireRole(principal, ['ADMIN']);
+    const expiresAt = input.expiresAt ? new Date(input.expiresAt) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    if (expiresAt <= new Date()) {
+      throw new BadRequestException('Invitation expiry must be in the future');
+    }
+    const code = generateAdminInvitationCode();
+    const invitation = await this.database.adminInvitation.create({
+      data: {
+        codeHash: hashInvitationCode(code),
+        createdById: actor.userId,
+        expiresAt,
+      },
+    });
+    return { id: invitation.id, code, expiresAt: invitation.expiresAt, createdAt: invitation.createdAt };
+  }
+
+  async revokeInvitation(principal: RequestPrincipal, invitationId: string): Promise<unknown> {
+    const actor = await this.context.requireRole(principal, ['ADMIN']);
+    const invitation = await this.database.adminInvitation.findFirst({
+      where: { id: invitationId, createdBy: { facilityId: actor.facilityId } },
+    });
+    if (!invitation) throw new NotFoundException('Invitation not found');
+    if (invitation.usedAt || invitation.revokedAt) {
+      throw new ConflictException('Invitation has already been used or revoked');
+    }
+    const updated = await this.database.adminInvitation.update({
+      where: { id: invitationId },
+      data: { revokedAt: new Date() },
+    });
+    return { id: updated.id, revokedAt: updated.revokedAt, status: 'REVOKED' };
+  }
+
   async disableAssignment(principal: RequestPrincipal, id: string): Promise<void> {
     const actor = await this.context.requireRole(principal, ['ADMIN']);
     const assignment = await this.database.assignment.findFirst({
@@ -227,6 +374,17 @@ export class AdminService {
         { purposeOfUse: 'OPERATIONS' },
       ),
     );
+  }
+
+  private invitationStatus(invitation: {
+    expiresAt: Date;
+    usedAt: Date | null;
+    revokedAt: Date | null;
+  }): 'ACTIVE' | 'USED' | 'REVOKED' | 'EXPIRED' {
+    if (invitation.revokedAt) return 'REVOKED';
+    if (invitation.usedAt) return 'USED';
+    if (invitation.expiresAt <= new Date()) return 'EXPIRED';
+    return 'ACTIVE';
   }
 
   async beginTotp(principal: RequestPrincipal, userId: string): Promise<unknown> {
