@@ -64,6 +64,8 @@ export default function PatientRecords() {
     const [loadError, setLoadError] = useState("");
     const [actionError, setActionError] = useState("");
     const [availableStaff, setAvailableStaff] = useState([]);
+    const [assignmentStaffLoading, setAssignmentStaffLoading] = useState(false);
+    const [assignmentStaffError, setAssignmentStaffError] = useState("");
 
     useEffect(() => {
         let mounted = true;
@@ -97,8 +99,18 @@ export default function PatientRecords() {
                     });
                     if (accessUser?.backendRole === "ADMIN" && isBackendEnabled()) {
                         setAssignments((nextPatient.assignments || []).map((assignment) => ({ id: assignment.id, staffId: assignment.staff?.id, staffName: assignment.staff?.displayName, assignmentType: "Care team", ward: nextPatient.ward, status: assignment.endsAt && new Date(assignment.endsAt) <= new Date() ? "Removed" : "Active" })));
-                        const candidates = await getAssignmentStaff();
-                        if (mounted) setAvailableStaff((candidates.items || []).map((staff) => ({ staffId: staff.id, name: staff.displayName, role: staff.assignments?.[0]?.role || "Staff", ward: staff.assignments?.[0]?.ward?.name || "-", department: staff.assignments?.[0]?.department?.name || "-" })));
+                        if (mounted) {
+                            setAssignmentStaffLoading(true);
+                            setAssignmentStaffError("");
+                        }
+                        try {
+                            const candidates = await getAssignmentStaff();
+                            if (mounted) setAvailableStaff((candidates.items || []).map((staff) => ({ staffId: staff.id, name: staff.displayName, role: staff.assignments?.[0]?.role || "Staff", ward: staff.assignments?.[0]?.ward?.name || "-", department: staff.assignments?.[0]?.department?.name || "-" })));
+                        } catch {
+                            if (mounted) setAssignmentStaffError("Unable to load staff. Please try again.");
+                        } finally {
+                            if (mounted) setAssignmentStaffLoading(false);
+                        }
                     } else setAssignments(getPatientAssignmentsForPatient(nextPatient.id));
                 }
             } catch (err) {
@@ -380,8 +392,12 @@ export default function PatientRecords() {
                     </label>
 
                     <div className="assignment-list">
-                        {filteredStaff.length === 0 ? (
-                            <p className="assignment-empty">No eligible staff found.</p>
+                        {assignmentStaffLoading ? (
+                            <p className="assignment-empty">Loading staff...</p>
+                        ) : assignmentStaffError ? (
+                            <p className="assignment-empty">{assignmentStaffError}</p>
+                        ) : filteredStaff.length === 0 ? (
+                            <p className="assignment-empty">No assignable staff found.</p>
                         ) : filteredStaff.map((member) => (
                             <button
                                 key={member.staffId}

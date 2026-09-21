@@ -23,6 +23,7 @@ import { PassportController } from './passport/passport.controller.js';
 import { PassportService } from './passport/passport.service.js';
 import { PolicyService } from './policy/policy.service.js';
 import { TotpService } from './security/totp.service.js';
+import { StaffService } from './staff/staff.service.js';
 
 @Module({
   controllers: [
@@ -50,7 +51,8 @@ import { TotpService } from './security/totp.service.js';
     OfflineService,
     NotificationService,
     AuthService,
+    StaffService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
-export class AppModule {}
+export class AppModule { }

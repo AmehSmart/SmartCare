@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query } from '@nestjs/common';
 import { RoleSchema } from '@kofa/contracts';
 import { z } from 'zod';
+import { Role } from '@kofa/contracts';
 import { Principal } from '../auth/principal.decorator.js';
 import type { RequestPrincipal } from '../auth/auth.types.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
@@ -33,6 +34,16 @@ const PatientCreateSchema = z.object({
   wardId: z.uuid().optional(),
   status: z.enum(['ACTIVE', 'DISCHARGED', 'INACTIVE']).default('ACTIVE'),
   assignedStaffId: z.uuid().optional(),
+});
+const StaffCreateSchema = z.object({
+  email: z.string().email(),
+  staffId: z.string().trim().min(1).max(32),
+  name: z.string().trim().min(1).max(160),
+  pin: z.string().regex(/^\d{6}$/),
+  role: RoleSchema.exclude(['PATIENT', 'CAREGIVER', 'ADMIN', 'AUDIT_OFFICER']),
+  department: z.string().trim().min(1).max(160),
+  ward: z.string().trim().max(160).optional(),
+  shift: z.string().trim().min(1).max(160),
 });
 
 @Controller('v1/admin')
@@ -79,6 +90,14 @@ export class AdminController {
     @Body(new ZodValidationPipe(PatientCreateSchema)) body: z.infer<typeof PatientCreateSchema>,
   ): Promise<unknown> {
     return this.admin.createPatient(principal, body);
+  }
+
+  @Post('staff')
+  createStaff(
+    @Principal() principal: RequestPrincipal,
+    @Body(new ZodValidationPipe(StaffCreateSchema)) body: z.infer<typeof StaffCreateSchema>,
+  ): Promise<unknown> {
+    return this.admin.createStaff(principal, body);
   }
 
   @Get('patients/:id')

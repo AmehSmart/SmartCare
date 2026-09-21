@@ -117,12 +117,16 @@ export async function registerAdministrator({ email, password, invitationCode })
   return auth;
 }
 
-export async function registerStaff({ email, staffId, name, department, ward, pin }) {
+export async function registerStaff({ email, staffId, name, department, ward, pin, role, shift }) {
   return apiFetch("/v1/auth/register-staff", {
     method: "POST",
     auth: false,
-    body: { email, staffId, name, department, ward, pin },
+    body: { email, staffId, name, department, ward, pin, role, shift },
   });
+}
+
+export async function getStaffRegistrationOptions() {
+  return apiFetch("/v1/auth/staff-options", { auth: false });
 }
 
 // --- patients -------------------------------------------------------------
@@ -494,6 +498,10 @@ export async function getAdminRoster() {
       assignedPatients: user.assignedPatients || [],
     };
   });
+}
+
+export async function createAdminStaff(input) {
+  return apiFetch("/v1/admin/staff", { method: "POST", body: input });
 }
 
 export async function getAdminPatients(query) {

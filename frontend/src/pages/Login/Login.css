@@ -321,6 +321,38 @@
   align-items: center;
   font-size: 13.5px;
 }
+.demo-box__login {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.demo-box__login:hover,
+.demo-box__login:focus-visible {
+  color: #0f6b99;
+  outline: none;
+}
+.demo-box__login:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.demo-box__email,
+.demo-box__pin {
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.demo-box__pin {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #334155;
+}
 .demo-box__id {
   font-family: "SFMono-Regular", Consolas, monospace;
   color: #334155;

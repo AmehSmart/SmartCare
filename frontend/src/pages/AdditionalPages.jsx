@@ -13,7 +13,7 @@ import QRCode from "qrcode";
 import { buildTotpUri, createTotpEnrollment, disableTotpEnrollment, getTotpEnrollment, verifyTotpEnrollment } from "../services/api/totpApi";
 import { getAuditQueue, verifyAuditChain } from "../services/api/auditApi";
 import { verifyEmergencyAccess, endEmergencyAccess } from "../services/api/emergencyApi";
-import { getRoster } from "../services/api/adminApi";
+import { createAdminStaff, getRoster } from "../services/api/adminApi";
 import { getMyPatients, createGrant, listGrants, revokeGrant, redeemToken, getAccessHistory } from "../services/api/passportApi";
 import { isBackendEnabled } from "../services/api/config";
 
@@ -436,7 +436,7 @@ export function AdminRoster() {
   const [roles] = useState(() => getRoles());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStaffId, setEditingStaffId] = useState("");
-  const [form, setForm] = useState({ staffId: "", role: "", ward: "", shift: "" });
+  const [form, setForm] = useState({ staffId: "", name: "", email: "", pin: "", role: "DOCTOR", department: "", ward: "", shift: "Day Shift" });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -453,7 +453,11 @@ export function AdminRoster() {
     setEditingStaffId(member?.staffId ?? "");
     setForm({
       staffId: member?.staffId ?? "",
+      name: "",
+      email: "",
+      pin: "",
       role: member?.role ?? roles[0]?.name ?? "",
+      department: member?.department ?? "",
       ward: member?.ward ?? "",
       shift: member?.shift ?? "Day Shift",
     });
@@ -468,6 +472,17 @@ export function AdminRoster() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (backendMode) {
+      if (!form.staffId || !form.name || !form.email || !/^\d{6}$/.test(form.pin) || !form.role || !form.department || !form.shift) {
+        setError("Enter staff ID, name, email, a 6-digit PIN, role, department, and shift.");
+        return;
+      }
+      createAdminStaff({ ...form, ward: form.ward || undefined })
+        .then(() => getRoster())
+        .then((nextStaff) => { setStaff(nextStaff); closeAssignment(); setError(""); })
+        .catch((creationError) => setError(creationError.message || "Unable to create staff member."));
+      return;
+    }
     if (!form.staffId || !form.role || !form.ward || !form.shift) {
       setError("Select a staff member, role, ward, and shift.");
       return;
@@ -486,7 +501,7 @@ export function AdminRoster() {
     <section className="extra-card">
       <div className="extra-actions">
         <h2>Staff assignments</h2>
-        {!backendMode && <Button onClick={() => openAssignment()}><Icon name="plus" /> Add assignment</Button>}
+        <Button onClick={() => openAssignment()}><Icon name="plus" /> {backendMode ? "Create staff" : "Add assignment"}</Button>
       </div>
       {backendMode && <p className="extra-muted">Live roster from the server. Assignment editing is managed in the backend and is read-only here.</p>}
       <div className="extra-table-wrap">
@@ -516,8 +531,22 @@ export function AdminRoster() {
       headerIcon="users"
     >
       <form className="extra-assignment-form" onSubmit={handleSubmit}>
+        {backendMode && !editingStaffId && <>
+          <label>Staff ID
+            <input value={form.staffId} onChange={(event) => setForm((current) => ({ ...current, staffId: event.target.value.toUpperCase() }))} placeholder="e.g. DR101" />
+          </label>
+          <label>Full name
+            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="e.g. Dr. Test Staff" />
+          </label>
+          <label>Email
+            <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} placeholder="staff@hospital.org" />
+          </label>
+          <label>6-digit PIN
+            <input inputMode="numeric" value={form.pin} onChange={(event) => setForm((current) => ({ ...current, pin: event.target.value.replace(/\D/g, "").slice(0, 6) }))} />
+          </label>
+        </>}
         <label>Staff member
-          <select value={form.staffId} onChange={(event) => setForm((current) => ({ ...current, staffId: event.target.value }))} disabled={Boolean(editingStaffId)}>
+          <select value={form.staffId} onChange={(event) => setForm((current) => ({ ...current, staffId: event.target.value }))} disabled={backendMode || Boolean(editingStaffId)}>
             <option value="">Select staff member</option>
             {staff.map((member) => <option key={member.staffId} value={member.staffId}>{member.name} ({member.staffId})</option>)}
           </select>
@@ -525,9 +554,12 @@ export function AdminRoster() {
         <label>Role
           <select value={form.role} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}>
             <option value="">Select role</option>
-            {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
+            {backendMode ? <><option value="DOCTOR">Doctor</option><option value="NURSE">Nurse</option><option value="LOCUM_DOCTOR">Locum Doctor</option><option value="RECORDS_CLERK">Records Clerk</option><option value="LAB_PHARMACY">Lab/Pharmacy</option></> : roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
           </select>
         </label>
+        {backendMode && <label>Department
+          <input value={form.department} onChange={(event) => setForm((current) => ({ ...current, department: event.target.value }))} placeholder="e.g. Cardiology" />
+        </label>}
         <label>Ward or department
           <input value={form.ward} onChange={(event) => setForm((current) => ({ ...current, ward: event.target.value }))} placeholder="e.g. Ward B" />
         </label>

@@ -1,7 +1,7 @@
 import { STAFF_PROFILES } from "./mockData";
 import { getRolePermissions } from "./roleService";
 import { isBackendEnabled } from "./config";
-import { loginStaff as backendLoginStaff, registerAdministrator as backendRegisterAdministrator, registerStaff as backendRegisterStaff } from "./backendAdapter";
+import { getStaffRegistrationOptions as backendGetStaffRegistrationOptions, loginStaff as backendLoginStaff, registerAdministrator as backendRegisterAdministrator, registerStaff as backendRegisterStaff } from "./backendAdapter";
 
 const PROFILE_OVERRIDES_KEY = "smartcare-profile-overrides";
 const LEGACY_PROFILE_OVERRIDES_KEY = "kofa-profile-overrides";
@@ -81,9 +81,9 @@ export async function updateStaffProfile(staffId, updates) {
   return toUserProfile(profile);
 }
 
-export async function registerStaff({ email, staffId, name, department, ward, pin }) {
+export async function registerStaff({ email, staffId, name, department, ward, pin, role, shift }) {
   if (isBackendEnabled()) {
-    return backendRegisterStaff({ email, staffId, name, department, ward, pin });
+    return backendRegisterStaff({ email, staffId, name, department, ward, pin, role, shift });
   }
 
   await new Promise((resolve) => setTimeout(resolve, 350));
@@ -127,6 +127,11 @@ export async function registerStaff({ email, staffId, name, department, ward, pi
   });
 
   return { email: cleanEmail, staffId: cleanStaffId, status: "pending_activation" };
+}
+
+export async function getStaffRegistrationOptions() {
+  if (isBackendEnabled()) return backendGetStaffRegistrationOptions();
+  return { departments: [], shifts: [] };
 }
 
 export async function registerAdministrator({ email, password, invitationCode }) {

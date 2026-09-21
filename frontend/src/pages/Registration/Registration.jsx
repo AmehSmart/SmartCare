@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Registration.css";
 import Icon from "../../components/ui/Icon";
 import Button from "../../components/ui/Button";
-import { registerAdministrator, registerStaff } from "../../services/api/authApi";
+import { getStaffRegistrationOptions, registerAdministrator, registerStaff } from "../../services/api/authApi";
 
-const initialForm = { email: "", staffId: "", name: "", department: "", ward: "", pin: "", confirmPin: "" };
+const initialForm = { email: "", staffId: "", name: "", role: "NURSE", department: "", ward: "", shift: "Day Shift", pin: "", confirmPin: "" };
 const adminInitialForm = { email: "", password: "", confirmPassword: "", invitationCode: "" };
 const STAFF_ID_PATTERN = /^[A-Z]{2,4}\d{3,5}$/i;
 
@@ -62,8 +62,37 @@ function StaffRegistration() {
     const [success, setSuccess] = useState(false);
     const [showPin, setShowPin] = useState(false);
     const [showConfirmPin, setShowConfirmPin] = useState(false);
+    const [departments, setDepartments] = useState([]);
+    const [shifts, setShifts] = useState([]);
+    const [optionsLoading, setOptionsLoading] = useState(true);
+    const [optionsError, setOptionsError] = useState("");
+
+    useEffect(() => {
+        let mounted = true;
+        getStaffRegistrationOptions()
+            .then((data) => {
+                if (!mounted) return;
+                const nextDepartments = Array.isArray(data?.departments) ? data.departments : [];
+                const nextShifts = Array.isArray(data?.shifts) ? data.shifts : [];
+                setDepartments(nextDepartments);
+                setShifts(nextShifts);
+                setForm((current) => ({
+                    ...current,
+                    shift: nextShifts.some((shift) => shift.name === current.shift) ? current.shift : nextShifts[0]?.name || "",
+                }));
+            })
+            .catch(() => {
+                if (mounted) setOptionsError("Unable to load departments and wards. Please try again.");
+            })
+            .finally(() => {
+                if (mounted) setOptionsLoading(false);
+            });
+        return () => { mounted = false; };
+    }, []);
 
     const setField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+    const selectedDepartment = departments.find((department) => department.name === form.department);
+    const wardOptions = selectedDepartment?.wards || [];
 
     const validate = () => {
         const nextErrors = {};
@@ -72,6 +101,7 @@ function StaffRegistration() {
         const name = form.name.trim();
         const department = form.department.trim();
         const ward = form.ward.trim();
+        const shift = form.shift.trim();
 
         if (!email) {
             nextErrors.email = "Email is required.";
@@ -86,8 +116,10 @@ function StaffRegistration() {
         }
 
         if (!name) nextErrors.name = "Full name is required.";
+        if (!form.role) nextErrors.role = "Role is required.";
         if (!department) nextErrors.department = "Department is required.";
         if (!ward) nextErrors.ward = "Ward or unit is required.";
+        if (!shift) nextErrors.shift = "Shift is required.";
         if (!/^\d{6}$/.test(form.pin)) nextErrors.pin = "Set a 6-digit PIN.";
         if (!form.confirmPin) nextErrors.confirmPin = "Please confirm your PIN.";
         else if (form.pin !== form.confirmPin) nextErrors.confirmPin = "PINs do not match.";
@@ -110,8 +142,10 @@ function StaffRegistration() {
                 email: form.email,
                 staffId: form.staffId,
                 name: form.name,
+                role: form.role,
                 department: form.department,
                 ward: form.ward,
+                shift: form.shift,
                 pin: form.pin,
             });
             setSuccess(true);
@@ -169,9 +203,12 @@ function StaffRegistration() {
                         <section className="registration-section">
                             <div className="registration-section__header"><h2>Professional information</h2></div>
                             <div className="registration-grid">
-                                <Field label="Department" value={form.department} onChange={(value) => setField("department", value)} error={errors.department} placeholder="e.g. Internal Medicine" autoComplete="organization" />
-                                <Field label="Ward or unit" value={form.ward} onChange={(value) => setField("ward", value)} error={errors.ward} placeholder="e.g. Ward B" autoComplete="street-address" />
+                                <SelectField label="Role" value={form.role} onChange={(value) => setField("role", value)} error={errors.role} options={[{ value: "DOCTOR", label: "Doctor" }, { value: "NURSE", label: "Nurse" }, { value: "LOCUM_DOCTOR", label: "Locum Doctor" }, { value: "RECORDS_CLERK", label: "Records Clerk" }, { value: "LAB_PHARMACY", label: "Lab/Pharmacy" }]} />
+                                <SelectField label="Department" value={form.department} onChange={(value) => setForm((current) => ({ ...current, department: value, ward: "" }))} error={errors.department} options={departments.map((department) => ({ value: department.name, label: department.name }))} placeholder={optionsLoading ? "Loading departments..." : "Select department"} disabled={optionsLoading || Boolean(optionsError)} />
+                                <SelectField label="Ward or unit" value={form.ward} onChange={(value) => setField("ward", value)} error={errors.ward} options={wardOptions.map((ward) => ({ value: ward.name, label: ward.name }))} placeholder={form.department ? "Select ward or unit" : "Select department first"} disabled={!form.department || optionsLoading || Boolean(optionsError)} />
+                                <SelectField label="Shift" value={form.shift} onChange={(value) => setField("shift", value)} error={errors.shift} options={shifts.map((shift) => ({ value: shift.name, label: shift.name }))} placeholder={optionsLoading ? "Loading shifts..." : "Select shift"} disabled={optionsLoading || Boolean(optionsError)} />
                             </div>
+                            {optionsError && <p className="registration-error" role="alert"><Icon name="alert" /> {optionsError}</p>}
                         </section>
 
                         <section className="registration-section">
@@ -333,6 +370,19 @@ function Field({ label, value, onChange, error, type = "text", placeholder, auto
                 )}
             </div>
             {error && <small id={`${label}-error`}>{error}</small>}
+        </label>
+    );
+}
+
+function SelectField({ label, value, onChange, error, options, placeholder = "Select an option", disabled = false }) {
+    return (
+        <label className="registration-field">
+            <span>{label}</span>
+            <select value={value} onChange={(event) => onChange(event.target.value)} aria-invalid={Boolean(error)} disabled={disabled}>
+                <option value="">{placeholder}</option>
+                {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+            {error && <small>{error}</small>}
         </label>
     );
 }

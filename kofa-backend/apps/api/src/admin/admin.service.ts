@@ -7,6 +7,7 @@ import { ClinicalService } from '../clinical/clinical.service.js';
 import { ContextService } from '../context/context.service.js';
 import { ClinicalDatabase } from '../database.service.js';
 import { TotpService } from '../security/totp.service.js';
+import { StaffService } from '../staff/staff.service.js';
 
 @Injectable()
 export class AdminService {
@@ -16,6 +17,7 @@ export class AdminService {
     @Inject(ClinicalService) private readonly clinical: ClinicalService,
     @Inject(AuditClient) private readonly audit: AuditClient,
     @Inject(TotpService) private readonly totp: TotpService,
+    @Inject(StaffService) private readonly staff: StaffService,
   ) { }
 
   async roster(principal: RequestPrincipal): Promise<unknown> {
@@ -148,6 +150,18 @@ export class AdminService {
     });
     await this.audit.append(this.clinical.auditInput(actor, 'ADMIN', 'CREATE_PATIENT', 'GRANT', created.id, { mrn: created.fhirId }, `patient-create:${created.id}`, { purposeOfUse: 'OPERATIONS' }));
     return this.patient(principal, created.id);
+  }
+
+  async createStaff(
+    principal: RequestPrincipal,
+    input: { email: string; staffId: string; name: string; pin: string; role: Exclude<Role, 'PATIENT' | 'CAREGIVER' | 'ADMIN' | 'AUDIT_OFFICER'>; department: string; ward?: string; shift: string },
+  ): Promise<unknown> {
+    const actor = await this.context.requireRole(principal, ['ADMIN']);
+    if (!actor.facilityId) throw new BadRequestException('Administrator is not linked to a facility');
+    const created = await this.staff.createStaff(input, actor.facilityId);
+    const staffId = input.staffId.trim().toUpperCase();
+    await this.audit.append(this.clinical.auditInput(actor, 'ADMIN', 'CREATE_STAFF', 'GRANT', created.user.id, { staffId, role: input.role, assignmentId: created.assignment.id }, `staff-create:${created.user.id}`, { purposeOfUse: 'OPERATIONS' }));
+    return { id: created.user.id, name: created.user.displayName, email: created.user.email, staffId, role: created.assignment.role, department: created.department, shift: created.shift };
   }
 
   private async nextMrn(transaction: any): Promise<string> {

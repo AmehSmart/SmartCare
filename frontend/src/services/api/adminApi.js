@@ -5,7 +5,7 @@
 // directory so the prototype still renders.
 
 import { isBackendEnabled } from "./config";
-import { getAdminRoster as backendGetAdminRoster, getAdminPatients, getAdminPatient, getAssignmentStaff, getAdminDepartments, createAdminPatient, assignAdminPatient, removeAdminPatientAssignment, setAdminPatientStatus } from "./backendAdapter";
+import { getAdminRoster as backendGetAdminRoster, createAdminStaff, getAdminPatients, getAdminPatient, getAssignmentStaff, getAdminDepartments, createAdminPatient, assignAdminPatient, removeAdminPatientAssignment, setAdminPatientStatus } from "./backendAdapter";
 import { getStaffMembers } from "./roleService";
 
 export async function getRoster() {
@@ -16,4 +16,4 @@ export async function getRoster() {
   return getStaffMembers();
 }
 
-export { getAdminPatients, getAdminPatient, getAdminDepartments, createAdminPatient, getAssignmentStaff, assignAdminPatient, removeAdminPatientAssignment, setAdminPatientStatus };
+export { createAdminStaff, getAdminPatients, getAdminPatient, getAdminDepartments, createAdminPatient, getAssignmentStaff, assignAdminPatient, removeAdminPatientAssignment, setAdminPatientStatus };

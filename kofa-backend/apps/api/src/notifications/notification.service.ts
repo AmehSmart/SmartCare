@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../../../../generated/clinical/client.js';
 import type { RequestPrincipal } from '../auth/auth.types.js';
 import { ContextService } from '../context/context.service.js';
@@ -7,9 +7,9 @@ import { ClinicalDatabase } from '../database.service.js';
 @Injectable()
 export class NotificationService {
   constructor(
-    private readonly database: ClinicalDatabase,
-    private readonly context: ContextService,
-  ) {}
+    @Inject(ClinicalDatabase) private readonly database: ClinicalDatabase,
+    @Inject(ContextService) private readonly context: ContextService,
+  ) { }
 
   async notifyPatient(
     patientId: string,

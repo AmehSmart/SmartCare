@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -9,12 +9,17 @@ import {
 import { SignJWT } from 'jose';
 import { loadApiConfig } from '../config.js';
 import { ClinicalDatabase } from '../database.service.js';
+import { StaffService, type StaffCreationInput } from '../staff/staff.service.js';
+import { hashPassword, verifyPassword } from './password.js';
 
 @Injectable()
 export class AuthService {
   private readonly secret = new TextEncoder().encode(loadApiConfig().AUTH_JWT_SECRET);
 
-  constructor(@Inject(ClinicalDatabase) private readonly database: ClinicalDatabase) { }
+  constructor(
+    @Inject(ClinicalDatabase) private readonly database: ClinicalDatabase,
+    @Inject(StaffService) private readonly staff: StaffService,
+  ) { }
 
   async login(email: string, password: string): Promise<unknown> {
     const user = await this.database.userProfile.findUnique({ where: { email } });
@@ -29,6 +34,10 @@ export class AuthService {
     staffId: string,
     displayName: string,
     pin: string,
+    department: string,
+    ward: string | undefined,
+    role: StaffCreationInput['role'],
+    shift: string,
   ): Promise<{ email: string; staffId: string; status: string }> {
     const normalizedEmail = normalizeAdminEmail(email);
     const normalizedStaffId = staffId.trim().toUpperCase();
@@ -41,22 +50,15 @@ export class AuthService {
       throw new BadRequestException('PIN must contain exactly 6 digits');
     }
 
-    const existingUser = await this.database.userProfile.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true },
-    });
-    if (existingUser) {
-      throw new ConflictException('An account with this email already exists');
-    }
-
-    await this.database.userProfile.create({
-      data: {
-        authSubject: `staff:${normalizedStaffId}:${randomUUID()}`,
-        displayName: normalizedDisplayName,
-        email: normalizedEmail,
-        passwordHash: hashPassword(pin),
-        active: true,
-      },
+    await this.staff.createStaff({
+      email: normalizedEmail,
+      staffId: normalizedStaffId,
+      name: normalizedDisplayName,
+      pin,
+      department,
+      ward,
+      role,
+      shift,
     });
 
     return { email: normalizedEmail, staffId: normalizedStaffId, status: 'pending_activation' };
@@ -217,16 +219,4 @@ export function isAdminInvitationValid(invitation: {
   return invitation.expiresAt > new Date();
 }
 
-export function hashPassword(password: string): string {
-  const salt = randomBytes(16);
-  const hash = scryptSync(password, salt, 64);
-  return `scrypt$${salt.toString('base64')}$${hash.toString('base64')}`;
-}
-
-function verifyPassword(password: string, stored: string): boolean {
-  const [algorithm, saltValue, hashValue] = stored.split('$');
-  if (algorithm !== 'scrypt' || !saltValue || !hashValue) return false;
-  const expected = Buffer.from(hashValue, 'base64');
-  const actual = scryptSync(password, Buffer.from(saltValue, 'base64'), expected.length);
-  return timingSafeEqual(actual, expected);
-}
+export { hashPassword, verifyPassword } from './password.js';
